@@ -51,49 +51,21 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         continue-on-error: true
 
-      - name: Check for Destructive Changes
-        id: check_destroy
-        if: steps.plan.outcome == 'success'
-        run: |
-          if echo "${{ steps.plan.outputs.stdout }}" | grep -E "destroy|to be destroyed"; then
-            echo "has_destroy=true" >> $GITHUB_OUTPUT
-            echo "::warning::Plan contains destructive changes!"
-          else
-            echo "has_destroy=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Post Plan Comment
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
-        env:
-          PLAN: "${{ steps.plan.outputs.stdout }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            <details><summary>Validation Output</summary>
-
-            \`\`\`\n
-            ${{ steps.validate.outputs.stdout }}
-            \`\`\`
-
-            </details>
 
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
 
-            ${{ steps.check_destroy.outputs.has_destroy == 'true' && '⚠️ **WARNING: This plan contains destructive changes!**' || '' }}
+            Plan is running in Terraform Cloud. [View run details](https://app.terraform.io/app/wiktor9196667/k8s-hetzner/runs)
 
-            <details><summary>Show Plan</summary>
-
-            \`\`\`terraform\n
-            ${process.env.PLAN}
-            \`\`\`
-
-            </details>
-
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            *Pushed by: ${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,

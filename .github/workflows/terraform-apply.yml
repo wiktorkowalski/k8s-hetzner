@@ -47,7 +47,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Status:** ${{ steps.apply.outcome }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Actor:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.apply.outcome }}" == "success" ]; then
             echo "✅ Infrastructure updated successfully" >> $GITHUB_STEP_SUMMARY

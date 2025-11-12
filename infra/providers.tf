@@ -1,5 +1,5 @@
 terraform {
-  required_version = "1.12.2"
+  required_version = "~> 1.13.0"
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
@@ -17,11 +17,11 @@ terraform {
 }
 
 provider "hcloud" {
-  token = var.hcloud_token != "" ? var.hcloud_token : env("HCLOUD_TOKEN")
+  token = var.hcloud_token
 }
 
 provider "cloudflare" {
-  api_token = var.cloudflare_api_token != "" ? var.cloudflare_api_token : env("CLOUDFLARE_API_TOKEN")
+  api_token = var.cloudflare_api_token
 }
 
 provider "github" {
