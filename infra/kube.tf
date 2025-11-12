@@ -2,6 +2,9 @@ module "kube-hetzner" {
   source  = "kube-hetzner/kube-hetzner/hcloud"
   version = "2.18.4"
 
+  # Hetzner token from environment variable
+  hcloud_token = var.hcloud_token
+
   providers = {
     hcloud = hcloud
   }
