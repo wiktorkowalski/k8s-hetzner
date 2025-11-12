@@ -1,0 +1,112 @@
+name: ArgoCD Sync
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/k8s-sync.yml'
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'App to sync (default: root-app)'
+        required: false
+        default: 'root-app'
+      prune:
+        description: 'Prune resources'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  argocd-sync:
+    name: Sync ArgoCD Applications
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd-linux-amd64
+          sudo mv argocd-linux-amd64 /usr/local/bin/argocd
+
+      - name: ArgoCD Login
+        run: |
+          argocd login ${{ secrets.ARGOCD_SERVER }} \
+            --auth-token ${{ secrets.ARGOCD_AUTH_TOKEN }} \
+            --grpc-web
+
+      - name: Sync Root App
+        id: sync
+        run: |
+          APP_NAME="${{ github.event.inputs.app_name || 'root-app' }}"
+          PRUNE_FLAG=""
+
+          if [ "${{ github.event.inputs.prune }}" == "true" ] || [ "${{ github.event_name }}" == "push" ]; then
+            PRUNE_FLAG="--prune"
+          fi
+
+          echo "Syncing $APP_NAME..."
+          argocd app sync "$APP_NAME" $PRUNE_FLAG --async
+
+          echo "Waiting for sync to complete..."
+          argocd app wait "$APP_NAME" --timeout 600
+
+          # Get sync status
+          argocd app get "$APP_NAME" --output json > app-status.json
+
+          # Extract status info
+          HEALTH=$(cat app-status.json | jq -r '.status.health.status')
+          SYNC=$(cat app-status.json | jq -r '.status.sync.status')
+
+          echo "health=$HEALTH" >> $GITHUB_OUTPUT
+          echo "sync=$SYNC" >> $GITHUB_OUTPUT
+
+      - name: List All Apps Status
+        if: always()
+        run: |
+          echo "Getting status of all applications..."
+          argocd app list -o wide > apps-status.txt
+          cat apps-status.txt
+
+      - name: Output Summary
+        if: always()
+        run: |
+          APP_NAME="${{ github.event.inputs.app_name || 'root-app' }}"
+
+          echo "### ArgoCD Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**App:** $APP_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "**Health:** ${{ steps.sync.outputs.health }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Sync Status:** ${{ steps.sync.outputs.sync }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.sync.outcome }}" == "success" ] && [ "${{ steps.sync.outputs.health }}" == "Healthy" ]; then
+            echo "✅ Sync completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Sync failed or app unhealthy - check ArgoCD UI" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "<details><summary>All Apps Status</summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          cat apps-status.txt >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check Sync Health
+        if: steps.sync.outputs.health != 'Healthy'
+        run: |
+          echo "::error::Application is not healthy after sync: ${{ steps.sync.outputs.health }}"
+          exit 1

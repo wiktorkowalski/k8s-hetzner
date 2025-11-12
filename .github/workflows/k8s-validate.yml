@@ -1,0 +1,208 @@
+name: Kubernetes Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/k8s-validate.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Tools
+        run: |
+          # Install yamllint
+          pip install yamllint
+
+          # Install kubeconform
+          wget https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform-linux-amd64.tar.gz
+          sudo mv kubeconform /usr/local/bin/
+
+          # Install kubectl
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+          # Install ArgoCD CLI
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd-linux-amd64
+          sudo mv argocd-linux-amd64 /usr/local/bin/argocd
+
+      - name: YAML Lint
+        id: yamllint
+        run: |
+          echo "Running yamllint..."
+          yamllint -c .yamllint k8s/ > yamllint.txt 2>&1 || true
+          cat yamllint.txt
+          if [ -s yamllint.txt ]; then
+            echo "has_issues=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_issues=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Kubeconform Validation
+        id: kubeconform
+        run: |
+          echo "Running kubeconform..."
+          # Find all YAML files and validate them
+          find k8s/ -type f \( -name "*.yaml" -o -name "*.yml" \) | \
+            xargs kubeconform -strict -ignore-missing-schemas -summary > kubeconform.txt 2>&1 || true
+          cat kubeconform.txt
+
+          if grep -q "invalid" kubeconform.txt; then
+            echo "has_errors=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_errors=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Setup Kubeconfig
+        if: vars.SKIP_CLUSTER_VALIDATION != 'true'
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Kubectl Dry Run
+        id: dryrun
+        if: vars.SKIP_CLUSTER_VALIDATION != 'true'
+        run: |
+          echo "Running kubectl dry-run..."
+          # Test applying all manifests in dry-run mode
+          find k8s/apps k8s/root-app -type f \( -name "*.yaml" -o -name "*.yml" \) | \
+            xargs -I {} sh -c 'echo "Checking {}" && kubectl apply --dry-run=server -f {} || exit 1' \
+            > dryrun.txt 2>&1 || true
+          cat dryrun.txt
+
+          if grep -q "error" dryrun.txt; then
+            echo "has_errors=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_errors=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: ArgoCD Diff Preview
+        id: argocd_diff
+        if: vars.SKIP_CLUSTER_VALIDATION != 'true'
+        run: |
+          echo "Logging into ArgoCD..."
+          argocd login ${{ secrets.ARGOCD_SERVER }} \
+            --auth-token ${{ secrets.ARGOCD_AUTH_TOKEN }} \
+            --grpc-web
+
+          echo "Getting diff for root-app..."
+          argocd app diff root-app --refresh > argocd-diff.txt 2>&1 || true
+
+          # Get preview of all apps
+          argocd app list -o name | while read app; do
+            echo "=== Diff for $app ===" >> argocd-all-diffs.txt
+            argocd app diff "$app" >> argocd-all-diffs.txt 2>&1 || true
+          done
+
+          cat argocd-all-diffs.txt
+
+          if [ -s argocd-all-diffs.txt ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Create Validation Report
+        if: always()
+        run: |
+          cat > validation-report.md << 'EOF'
+          ## Kubernetes Validation Report
+
+          ### YAML Lint
+          Status: ${{ steps.yamllint.outcome }}
+          Issues: ${{ steps.yamllint.outputs.has_issues }}
+
+          <details><summary>YAMLlint Output</summary>
+
+          ```
+          $(cat yamllint.txt 2>/dev/null || echo "No issues found")
+          ```
+
+          </details>
+
+          ### Kubeconform Schema Validation
+          Status: ${{ steps.kubeconform.outcome }}
+          Errors: ${{ steps.kubeconform.outputs.has_errors }}
+
+          <details><summary>Kubeconform Output</summary>
+
+          ```
+          $(cat kubeconform.txt 2>/dev/null || echo "Validation passed")
+          ```
+
+          </details>
+
+          ### Kubectl Dry Run
+          Status: ${{ steps.dryrun.outcome }}
+          Errors: ${{ steps.dryrun.outputs.has_errors }}
+
+          <details><summary>Dry Run Output</summary>
+
+          ```
+          $(cat dryrun.txt 2>/dev/null || echo "Skipped or passed")
+          ```
+
+          </details>
+
+          ### ArgoCD Diff Preview
+          Status: ${{ steps.argocd_diff.outcome }}
+          Changes Detected: ${{ steps.argocd_diff.outputs.has_changes }}
+
+          <details><summary>ArgoCD Diff</summary>
+
+          ```diff
+          $(cat argocd-all-diffs.txt 2>/dev/null | head -n 500 || echo "No changes or skipped")
+          ```
+
+          </details>
+
+          ---
+          *Validation by: @${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*
+          EOF
+
+          cat validation-report.md
+
+      - name: Post Validation Comment
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('validation-report.md', 'utf8');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+      - name: Check Validation Status
+        if: |
+          steps.kubeconform.outputs.has_errors == 'true' ||
+          steps.dryrun.outputs.has_errors == 'true'
+        run: |
+          echo "::error::Validation failed - check the report above"
+          exit 1
