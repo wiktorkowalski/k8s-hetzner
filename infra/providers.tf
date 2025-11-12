@@ -17,11 +17,11 @@ terraform {
 }
 
 provider "hcloud" {
-  # Token is set via HCLOUD_TOKEN environment variable or var.hcloud_token
+  token = var.hcloud_token
 }
 
 provider "cloudflare" {
-  # API token is set via CLOUDFLARE_API_TOKEN environment variable or var.cloudflare_api_token
+  api_token = var.cloudflare_api_token
 }
 
 provider "github" {

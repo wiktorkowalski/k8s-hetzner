@@ -1,14 +1,12 @@
 variable "hcloud_token" {
-  description = "Hetzner Cloud API Token"
+  description = "Hetzner Cloud API Token (set via HCLOUD_TOKEN env var in TF Cloud)"
   type        = string
-  default     = ""
   sensitive   = true
 }
 
 variable "cloudflare_api_token" {
-  description = "Cloudflare API Token with DNS edit permissions"
+  description = "Cloudflare API Token with DNS edit permissions (set via CLOUDFLARE_API_TOKEN env var in TF Cloud)"
   type        = string
-  default     = ""
   sensitive   = true
 }
 
