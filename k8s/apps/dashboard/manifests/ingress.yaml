@@ -47,8 +47,8 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-  - host: dashboard.k8s.vicio.ovh
+    - host: dashboard.k8s.vicio.ovh
   tls:
-  - hosts:
-    - dashboard.k8s.vicio.ovh
-    secretName: dashboard-tls
+    - hosts:
+        - dashboard.k8s.vicio.ovh
+      secretName: dashboard-tls

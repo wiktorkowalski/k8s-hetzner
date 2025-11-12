@@ -8,201 +8,396 @@ on:
     paths:
       - 'k8s/**'
       - '.github/workflows/k8s-validate.yml'
+      - '.github/scripts/validate-dependencies.sh'
 
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
-  validate:
-    name: Validate Kubernetes Manifests
+  local-validation:
+    name: Local Validation (yamllint + kubeconform)
     runs-on: ubuntu-latest
+    outputs:
+      yamllint-status: ${{ steps.yamllint.outcome }}
+      yamllint-issues: ${{ steps.yamllint.outputs.has_issues }}
+      kubeconform-status: ${{ steps.kubeconform.outcome }}
+      kubeconform-errors: ${{ steps.kubeconform.outputs.has_errors }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Tools
-        run: |
-          # Install yamllint
-          pip install yamllint
+      - name: Setup Python for yamllint
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-          # Install kubeconform
-          wget https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Cache kubeconform
+        id: cache-kubeconform
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/kubeconform
+          key: kubeconform-${{ runner.os }}-v1
+
+      - name: Install kubeconform
+        if: steps.cache-kubeconform.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
           tar xf kubeconform-linux-amd64.tar.gz
           sudo mv kubeconform /usr/local/bin/
-
-          # Install kubectl
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          sudo mv kubectl /usr/local/bin/
-
-          # Install ArgoCD CLI
-          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          chmod +x argocd-linux-amd64
-          sudo mv argocd-linux-amd64 /usr/local/bin/argocd
+          sudo chmod +x /usr/local/bin/kubeconform
 
       - name: YAML Lint
         id: yamllint
         run: |
-          echo "Running yamllint..."
+          echo "Running yamllint on k8s/ directory..."
           yamllint -c .yamllint k8s/ > yamllint.txt 2>&1 || true
-          cat yamllint.txt
+
           if [ -s yamllint.txt ]; then
-            echo "has_issues=true" >> $GITHUB_OUTPUT
+            cat yamllint.txt
+            # Check for errors (not just warnings)
+            if grep -q "\[error\]" yamllint.txt; then
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_issues=false" >> $GITHUB_OUTPUT
+              echo "ℹ️  Only warnings found, no errors"
+            fi
           else
             echo "has_issues=false" >> $GITHUB_OUTPUT
+            echo "✅ No yamllint issues found"
           fi
-        continue-on-error: true
 
-      - name: Kubeconform Validation
+      - name: Kubeconform Schema Validation
         id: kubeconform
         run: |
-          echo "Running kubeconform..."
-          # Find all YAML files and validate them
+          echo "Running kubeconform on all manifests..."
           find k8s/ -type f \( -name "*.yaml" -o -name "*.yml" \) | \
-            xargs kubeconform -strict -ignore-missing-schemas -summary > kubeconform.txt 2>&1 || true
-          cat kubeconform.txt
+            xargs kubeconform -strict -ignore-missing-schemas -summary 2>&1 | tee kubeconform.txt || true
 
-          if grep -q "invalid" kubeconform.txt; then
+          # Check for actual invalid resources or errors (not zero counts)
+          if grep -E "Invalid: [1-9]|Errors: [1-9]" kubeconform.txt; then
             echo "has_errors=true" >> $GITHUB_OUTPUT
           else
             echo "has_errors=false" >> $GITHUB_OUTPUT
+            echo "✅ All resources passed kubeconform validation"
           fi
-        continue-on-error: true
+
+      - name: Upload validation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-validation-results
+          path: |
+            yamllint.txt
+            kubeconform.txt
+          retention-days: 7
+
+      - name: Fail if validation errors
+        if: steps.yamllint.outputs.has_issues == 'true' || steps.kubeconform.outputs.has_errors == 'true'
+        run: |
+          echo "::error::Local validation failed - yamllint or kubeconform found issues"
+          exit 1
+
+  dependency-check:
+    name: Dependency Validation
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.depcheck.outcome }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run dependency validation
+        id: depcheck
+        run: |
+          chmod +x .github/scripts/validate-dependencies.sh
+          ./.github/scripts/validate-dependencies.sh k8s > dependency-check.txt 2>&1 || true
+          cat dependency-check.txt
+
+          # Check if script failed
+          if ./.github/scripts/validate-dependencies.sh k8s; then
+            echo "has_errors=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_errors=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Upload dependency check results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-results
+          path: dependency-check.txt
+          retention-days: 7
+
+  cluster-validation:
+    name: Cluster Validation (kubectl + ArgoCD)
+    runs-on: ubuntu-latest
+    needs: [local-validation, dependency-check]
+    if: vars.SKIP_CLUSTER_VALIDATION != 'true'
+    outputs:
+      dryrun-status: ${{ steps.dryrun.outcome }}
+      dryrun-errors: ${{ steps.dryrun.outputs.has_errors }}
+      argocd-status: ${{ steps.argocd_diff.outcome }}
+      argocd-changes: ${{ steps.argocd_diff.outputs.has_changes }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache kubectl
+        id: cache-kubectl
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/kubectl
+          key: kubectl-${{ runner.os }}-v1
+
+      - name: Install kubectl
+        if: steps.cache-kubectl.outputs.cache-hit != 'true'
+        run: |
+          curl -sLO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Cache ArgoCD CLI
+        id: cache-argocd
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/argocd
+          key: argocd-${{ runner.os }}-v1
+
+      - name: Install ArgoCD CLI
+        if: steps.cache-argocd.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x argocd-linux-amd64
+          sudo mv argocd-linux-amd64 /usr/local/bin/argocd
 
       - name: Setup Kubeconfig
-        if: vars.SKIP_CLUSTER_VALIDATION != 'true'
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
+          if [ -n "${{ secrets.KUBECONFIG_BASE64 }}" ]; then
+            mkdir -p ~/.kube
+            echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
+            chmod 600 ~/.kube/config
+          else
+            echo "⏭️  Skipping kubeconfig setup (KUBECONFIG_BASE64 not configured)"
+          fi
 
       - name: Kubectl Dry Run
         id: dryrun
-        if: vars.SKIP_CLUSTER_VALIDATION != 'true'
         run: |
-          echo "Running kubectl dry-run..."
-          # Test applying all manifests in dry-run mode
-          find k8s/apps k8s/root-app -type f \( -name "*.yaml" -o -name "*.yml" \) | \
-            xargs -I {} sh -c 'echo "Checking {}" && kubectl apply --dry-run=server -f {} || exit 1' \
-            > dryrun.txt 2>&1 || true
+          if [ -z "${{ secrets.KUBECONFIG_BASE64 }}" ]; then
+            echo "⏭️  Skipping kubectl dry-run (KUBECONFIG_BASE64 secret not configured)"
+            echo "has_errors=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Running kubectl dry-run on all manifests..."
+
+          # Include all directories: bootstrap, root-app, and apps
+          EXIT_CODE=0
+          find k8s/bootstrap k8s/root-app k8s/apps -type f \( -name "*.yaml" -o -name "*.yml" \) 2>/dev/null | while read -r file; do
+            echo "Checking: $file"
+            if ! kubectl apply --dry-run=server -f "$file" 2>&1; then
+              EXIT_CODE=1
+            fi
+          done > dryrun.txt 2>&1 || EXIT_CODE=$?
+
           cat dryrun.txt
 
-          if grep -q "error" dryrun.txt; then
+          # Case-insensitive error detection
+          if grep -iq "error" dryrun.txt || [ $EXIT_CODE -ne 0 ]; then
             echo "has_errors=true" >> $GITHUB_OUTPUT
+            exit 1
           else
             echo "has_errors=false" >> $GITHUB_OUTPUT
+            echo "✅ All manifests passed dry-run validation"
           fi
-        continue-on-error: true
 
       - name: ArgoCD Diff Preview
         id: argocd_diff
-        if: vars.SKIP_CLUSTER_VALIDATION != 'true'
         run: |
+          if [ -z "${{ secrets.ARGOCD_SERVER }}" ] || [ -z "${{ secrets.ARGOCD_AUTH_TOKEN }}" ]; then
+            echo "⏭️  Skipping ArgoCD diff (ARGOCD_SERVER or ARGOCD_AUTH_TOKEN secret not configured)"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           echo "Logging into ArgoCD..."
           argocd login ${{ secrets.ARGOCD_SERVER }} \
             --auth-token ${{ secrets.ARGOCD_AUTH_TOKEN }} \
             --grpc-web
 
-          echo "Getting diff for root-app..."
-          argocd app diff root-app --refresh > argocd-diff.txt 2>&1 || true
-
-          # Get preview of all apps
-          argocd app list -o name | while read app; do
+          echo "Getting diff for all applications..."
+          argocd app list -o name | while read -r app; do
             echo "=== Diff for $app ===" >> argocd-all-diffs.txt
-            argocd app diff "$app" >> argocd-all-diffs.txt 2>&1 || true
+            argocd app diff "$app" --refresh >> argocd-all-diffs.txt 2>&1 || true
+            echo "" >> argocd-all-diffs.txt
           done
-
-          cat argocd-all-diffs.txt
 
           if [ -s argocd-all-diffs.txt ]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "📋 Changes detected:"
+            head -n 100 argocd-all-diffs.txt
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "✅ No changes detected in ArgoCD apps"
           fi
         continue-on-error: true
 
-      - name: Create Validation Report
+      - name: Upload cluster validation artifacts
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-validation-results
+          path: |
+            dryrun.txt
+            argocd-all-diffs.txt
+          retention-days: 7
+
+  report:
+    name: Post Validation Report
+    runs-on: ubuntu-latest
+    needs: [local-validation, dependency-check, cluster-validation]
+    if: always() && github.event_name == 'pull_request'
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create validation report
         run: |
-          cat > validation-report.md << 'EOF'
-          ## Kubernetes Validation Report
+          {
+            echo "## 🔍 Kubernetes Validation Report"
+            echo ""
+            echo "### Local Validation"
+            echo ""
+            echo "#### YAML Lint"
+            echo "**Status:** ${{ needs.local-validation.outputs.yamllint-status }}"
+            echo "**Issues:** ${{ needs.local-validation.outputs.yamllint-issues == 'true' && '❌ Issues found' || '✅ No issues' }}"
+            echo ""
+            echo "<details><summary>YAMLlint Output</summary>"
+            echo ""
+            echo '```'
+            cat artifacts/local-validation-results/yamllint.txt 2>/dev/null || echo "No issues found"
+            echo '```'
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "#### Kubeconform Schema Validation"
+            echo "**Status:** ${{ needs.local-validation.outputs.kubeconform-status }}"
+            echo "**Errors:** ${{ needs.local-validation.outputs.kubeconform-errors == 'true' && '❌ Errors found' || '✅ No errors' }}"
+            echo ""
+            echo "<details><summary>Kubeconform Output</summary>"
+            echo ""
+            echo '```'
+            cat artifacts/local-validation-results/kubeconform.txt 2>/dev/null || echo "Validation passed"
+            echo '```'
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Dependency Validation"
+            echo "**Status:** ${{ needs.dependency-check.outputs.status }}"
+            echo ""
+            echo "<details><summary>Dependency Check Output</summary>"
+            echo ""
+            echo '```'
+            cat artifacts/dependency-check-results/dependency-check.txt 2>/dev/null || echo "Dependency validation passed"
+            echo '```'
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Cluster Validation"
+            echo "${{ vars.SKIP_CLUSTER_VALIDATION == 'true' && '⏭️ **Skipped** (SKIP_CLUSTER_VALIDATION is true)' || '' }}"
 
-          ### YAML Lint
-          Status: ${{ steps.yamllint.outcome }}
-          Issues: ${{ steps.yamllint.outputs.has_issues }}
+            if [ "${{ vars.SKIP_CLUSTER_VALIDATION }}" != "true" ]; then
+              echo ""
+              echo "#### Kubectl Dry Run"
+              echo "**Status:** ${{ needs.cluster-validation.outputs.dryrun-status }}"
+              echo "**Errors:** ${{ needs.cluster-validation.outputs.dryrun-errors == 'true' && '❌ Errors found' || '✅ No errors' }}"
+              echo ""
+              echo "<details><summary>Dry Run Output</summary>"
+              echo ""
+              echo '```'
+              cat artifacts/cluster-validation-results/dryrun.txt 2>/dev/null | head -n 200 || echo "Validation skipped or passed"
+              echo '```'
+              echo ""
+              echo "</details>"
+              echo ""
+              echo "#### ArgoCD Diff Preview"
+              echo "**Status:** ${{ needs.cluster-validation.outputs.argocd-status }}"
+              echo "**Changes:** ${{ needs.cluster-validation.outputs.argocd-changes == 'true' && '📋 Changes detected' || '✅ No changes' }}"
+              echo ""
+              echo "<details><summary>ArgoCD Diff</summary>"
+              echo ""
+              echo '```diff'
+              cat artifacts/cluster-validation-results/argocd-all-diffs.txt 2>/dev/null | head -n 300 || echo "No changes detected"
+              echo '```'
+              echo ""
+              echo "</details>"
+            fi
 
-          <details><summary>YAMLlint Output</summary>
-
-          ```
-          $(cat yamllint.txt 2>/dev/null || echo "No issues found")
-          ```
-
-          </details>
-
-          ### Kubeconform Schema Validation
-          Status: ${{ steps.kubeconform.outcome }}
-          Errors: ${{ steps.kubeconform.outputs.has_errors }}
-
-          <details><summary>Kubeconform Output</summary>
-
-          ```
-          $(cat kubeconform.txt 2>/dev/null || echo "Validation passed")
-          ```
-
-          </details>
-
-          ### Kubectl Dry Run
-          Status: ${{ steps.dryrun.outcome }}
-          Errors: ${{ steps.dryrun.outputs.has_errors }}
-
-          <details><summary>Dry Run Output</summary>
-
-          ```
-          $(cat dryrun.txt 2>/dev/null || echo "Skipped or passed")
-          ```
-
-          </details>
-
-          ### ArgoCD Diff Preview
-          Status: ${{ steps.argocd_diff.outcome }}
-          Changes Detected: ${{ steps.argocd_diff.outputs.has_changes }}
-
-          <details><summary>ArgoCD Diff</summary>
-
-          ```diff
-          $(cat argocd-all-diffs.txt 2>/dev/null | head -n 500 || echo "No changes or skipped")
-          ```
-
-          </details>
-
-          ---
-          *Validation by: ${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*
-          EOF
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Summary"
+            echo "- **Local Validation:** ${{ needs.local-validation.result }}"
+            echo "- **Dependency Check:** ${{ needs.dependency-check.result }}"
+            echo "- **Cluster Validation:** ${{ needs.cluster-validation.result == 'skipped' && '⏭️ Skipped' || needs.cluster-validation.result }}"
+            echo ""
+            echo "${{ (needs.local-validation.result == 'failure' || needs.dependency-check.result == 'failure' || needs.cluster-validation.result == 'failure') && '❌ **Validation FAILED** - Please fix the issues above before merging.' || '✅ **All validations PASSED**' }}"
+            echo ""
+            echo "---"
+            echo "*Validation by: ${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*"
+          } > validation-report.md
 
           cat validation-report.md
 
-      - name: Post Validation Comment
+      - name: Post validation comment
         uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const report = fs.readFileSync('validation-report.md', 'utf8');
 
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            // Find existing comment
+            const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: report
+              issue_number: context.issue.number,
             });
 
-      - name: Check Validation Status
-        if: |
-          steps.kubeconform.outputs.has_errors == 'true' ||
-          steps.dryrun.outputs.has_errors == 'true'
-        run: |
-          echo "::error::Validation failed - check the report above"
-          exit 1
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Kubernetes Validation Report')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
