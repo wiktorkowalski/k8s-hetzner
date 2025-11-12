@@ -88,7 +88,7 @@ jobs:
           echo "**Health:** ${{ steps.sync.outputs.health }}" >> $GITHUB_STEP_SUMMARY
           echo "**Sync Status:** ${{ steps.sync.outputs.sync }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ steps.sync.outcome }}" == "success" ] && [ "${{ steps.sync.outputs.health }}" == "Healthy" ]; then

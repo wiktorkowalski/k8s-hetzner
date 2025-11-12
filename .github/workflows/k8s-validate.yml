@@ -178,7 +178,7 @@ jobs:
           </details>
 
           ---
-          *Validation by: @${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*
+          *Validation by: ${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*
           EOF
 
           cat validation-report.md
