@@ -1,0 +1,25 @@
+# Hetzner Cloud Configuration
+# Get your token from: https://console.hetzner.cloud/ -> Security -> API Tokens
+# hcloud_token = "your-hetzner-api-token-here"
+
+# Cloudflare Configuration
+# Get your API token from: https://dash.cloudflare.com/profile/api-tokens
+# Required permissions: Zone.DNS (Edit)
+# cloudflare_api_token = "your-cloudflare-api-token-here"
+
+# Get your zone ID from: https://dash.cloudflare.com/ -> Select your domain -> Overview (right sidebar)
+# cloudflare_zone_id = "your-cloudflare-zone-id-here"
+
+# Domain Configuration
+domain = "example.com"  # Replace with your actual domain
+
+# Cluster Configuration
+cluster_subdomain = "k8s"  # This will create k8s.example.com
+cluster_name      = "k8s-hetzner-prod"
+
+# Network Configuration
+network_region = "eu-central"  # Options: eu-central, us-east, us-west
+
+# SSH Keys (uncomment and modify if different from defaults)
+# ssh_public_key_path  = "~/.ssh/id_ed25519.pub"
+# ssh_private_key_path = "~/.ssh/id_ed25519"
