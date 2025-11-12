@@ -78,11 +78,12 @@ jobs:
           find k8s/ -type f \( -name "*.yaml" -o -name "*.yml" \) | \
             xargs kubeconform -strict -ignore-missing-schemas -summary 2>&1 | tee kubeconform.txt || true
 
-          # Case-insensitive error detection
-          if grep -iq "invalid\|error" kubeconform.txt; then
+          # Check for actual invalid resources or errors (not zero counts)
+          if grep -E "Invalid: [1-9]|Errors: [1-9]" kubeconform.txt; then
             echo "has_errors=true" >> $GITHUB_OUTPUT
           else
             echo "has_errors=false" >> $GITHUB_OUTPUT
+            echo "✅ All resources passed kubeconform validation"
           fi
 
       - name: Upload validation artifacts
@@ -342,7 +343,7 @@ jobs:
             echo "${{ (needs.local-validation.result == 'failure' || needs.dependency-check.result == 'failure' || needs.cluster-validation.result == 'failure') && '❌ **Validation FAILED** - Please fix the issues above before merging.' || '✅ **All validations PASSED**' }}"
             echo ""
             echo "---"
-            echo "*Validation by: @${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*"
+            echo "*Validation by: ${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*"
           } > validation-report.md
 
           cat validation-report.md
