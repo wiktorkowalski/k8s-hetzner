@@ -179,7 +179,7 @@ jobs:
           sudo mv argocd-linux-amd64 /usr/local/bin/argocd
 
       - name: Setup Kubeconfig
-        if: secrets.KUBECONFIG_BASE64 != ''
+        if: ${{ secrets.KUBECONFIG_BASE64 != '' }}
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
