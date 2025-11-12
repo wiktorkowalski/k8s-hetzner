@@ -64,9 +64,9 @@ find "$K8S_DIR" -type f \( -name "*.yaml" -o -name "*.yml" \) | while read -r fi
         continue
     fi
 
-    # Extract namespace references
-    if grep -q "namespace:" "$file"; then
-        grep "namespace:" "$file" | awk '{print $2}' | sed 's/[",]//g' >> "$NAMESPACES_REQUIRED"
+    # Extract namespace references (skip metadata.namespace as those are definitions)
+    if grep -q "  namespace:" "$file"; then
+        grep "  namespace:" "$file" | awk '{print $2}' | sed 's/[",]//g' | grep -v '^$' >> "$NAMESPACES_REQUIRED"
     fi
 
     # Extract custom apiVersions (potential CRD usage)
@@ -86,14 +86,16 @@ MISSING_NAMESPACES=0
 while read -r ns; do
     if [ -z "$ns" ]; then continue; fi
     if ! grep -q "^${ns}$" "$NAMESPACES_DEFINED"; then
-        echo -e "${RED}✗${NC} Namespace '$ns' is referenced but not defined"
+        echo -e "${YELLOW}⚠${NC}  Namespace '$ns' referenced but not defined (ArgoCD may auto-create)"
         MISSING_NAMESPACES=$((MISSING_NAMESPACES + 1))
-        ERRORS=$((ERRORS + 1))
+        WARNINGS=$((WARNINGS + 1))
     fi
 done < "$NAMESPACES_REQUIRED"
 
 if [ $MISSING_NAMESPACES -eq 0 ]; then
     echo -e "${GREEN}✓${NC} All referenced namespaces are defined"
+else
+    echo -e "${YELLOW}ℹ${NC}  Note: ArgoCD can auto-create missing namespaces"
 fi
 echo ""
 

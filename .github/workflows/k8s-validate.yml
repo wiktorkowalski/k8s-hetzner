@@ -32,7 +32,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Install yamllint
         run: pip install yamllint
@@ -252,75 +251,93 @@ jobs:
 
       - name: Create validation report
         run: |
-          cat > validation-report.md << 'EOF'
-          ## 🔍 Kubernetes Validation Report
+          {
+            echo "## 🔍 Kubernetes Validation Report"
+            echo ""
+            echo "### Local Validation"
+            echo ""
+            echo "#### YAML Lint"
+            echo "**Status:** ${{ needs.local-validation.outputs.yamllint-status }}"
+            echo "**Issues:** ${{ needs.local-validation.outputs.yamllint-issues == 'true' && '❌ Issues found' || '✅ No issues' }}"
+            echo ""
+            echo "<details><summary>YAMLlint Output</summary>"
+            echo ""
+            echo '```'
+            cat artifacts/local-validation-results/yamllint.txt 2>/dev/null || echo "No issues found"
+            echo '```'
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "#### Kubeconform Schema Validation"
+            echo "**Status:** ${{ needs.local-validation.outputs.kubeconform-status }}"
+            echo "**Errors:** ${{ needs.local-validation.outputs.kubeconform-errors == 'true' && '❌ Errors found' || '✅ No errors' }}"
+            echo ""
+            echo "<details><summary>Kubeconform Output</summary>"
+            echo ""
+            echo '```'
+            cat artifacts/local-validation-results/kubeconform.txt 2>/dev/null || echo "Validation passed"
+            echo '```'
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Dependency Validation"
+            echo "**Status:** ${{ needs.dependency-check.outputs.status }}"
+            echo ""
+            echo "<details><summary>Dependency Check Output</summary>"
+            echo ""
+            echo '```'
+            cat artifacts/dependency-check-results/dependency-check.txt 2>/dev/null || echo "Dependency validation passed"
+            echo '```'
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Cluster Validation"
+            echo "${{ vars.SKIP_CLUSTER_VALIDATION == 'true' && '⏭️ **Skipped** (SKIP_CLUSTER_VALIDATION is true)' || '' }}"
 
-          ### Local Validation
+            if [ "${{ vars.SKIP_CLUSTER_VALIDATION }}" != "true" ]; then
+              echo ""
+              echo "#### Kubectl Dry Run"
+              echo "**Status:** ${{ needs.cluster-validation.outputs.dryrun-status }}"
+              echo "**Errors:** ${{ needs.cluster-validation.outputs.dryrun-errors == 'true' && '❌ Errors found' || '✅ No errors' }}"
+              echo ""
+              echo "<details><summary>Dry Run Output</summary>"
+              echo ""
+              echo '```'
+              cat artifacts/cluster-validation-results/dryrun.txt 2>/dev/null | head -n 200 || echo "Validation skipped or passed"
+              echo '```'
+              echo ""
+              echo "</details>"
+              echo ""
+              echo "#### ArgoCD Diff Preview"
+              echo "**Status:** ${{ needs.cluster-validation.outputs.argocd-status }}"
+              echo "**Changes:** ${{ needs.cluster-validation.outputs.argocd-changes == 'true' && '📋 Changes detected' || '✅ No changes' }}"
+              echo ""
+              echo "<details><summary>ArgoCD Diff</summary>"
+              echo ""
+              echo '```diff'
+              cat artifacts/cluster-validation-results/argocd-all-diffs.txt 2>/dev/null | head -n 300 || echo "No changes detected"
+              echo '```'
+              echo ""
+              echo "</details>"
+            fi
 
-          #### YAML Lint
-          **Status:** ${{ needs.local-validation.outputs.yamllint-status }}
-          **Issues:** ${{ needs.local-validation.outputs.yamllint-issues == 'true' && '❌ Issues found' || '✅ No issues' }}
-
-          <details><summary>YAMLlint Output</summary>
-
-          ```
-          $(cat artifacts/local-validation-results/yamllint.txt 2>/dev/null || echo "No issues found")
-          ```
-
-          </details>
-
-          #### Kubeconform Schema Validation
-          **Status:** ${{ needs.local-validation.outputs.kubeconform-status }}
-          **Errors:** ${{ needs.local-validation.outputs.kubeconform-errors == 'true' && '❌ Errors found' || '✅ No errors' }}
-
-          <details><summary>Kubeconform Output</summary>
-
-          ```
-          $(cat artifacts/local-validation-results/kubeconform.txt 2>/dev/null || echo "Validation passed")
-          ```
-
-          </details>
-
-          ---
-
-          ### Dependency Validation
-          **Status:** ${{ needs.dependency-check.outputs.status }}
-
-          <details><summary>Dependency Check Output</summary>
-
-          ```
-          $(cat artifacts/dependency-check-results/dependency-check.txt 2>/dev/null || echo "Dependency validation passed")
-          ```
-
-          </details>
-
-          ---
-
-          ### Cluster Validation
-          ${{ vars.SKIP_CLUSTER_VALIDATION == 'true' && '⏭️ **Skipped** (SKIP_CLUSTER_VALIDATION is true)' || '' }}
-
-          ${{ vars.SKIP_CLUSTER_VALIDATION != 'true' && '#### Kubectl Dry Run\n**Status:** ' || '' }}${{ needs.cluster-validation.outputs.dryrun-status }}
-          ${{ vars.SKIP_CLUSTER_VALIDATION != 'true' && '**Errors:** ' || '' }}${{ needs.cluster-validation.outputs.dryrun-errors == 'true' && '❌ Errors found' || '✅ No errors' }}
-
-          ${{ vars.SKIP_CLUSTER_VALIDATION != 'true' && '<details><summary>Dry Run Output</summary>\n\n```\n$(cat artifacts/cluster-validation-results/dryrun.txt 2>/dev/null | head -n 200 || echo "Validation passed")\n```\n\n</details>' || '' }}
-
-          ${{ vars.SKIP_CLUSTER_VALIDATION != 'true' && '#### ArgoCD Diff Preview\n**Status:** ' || '' }}${{ needs.cluster-validation.outputs.argocd-status }}
-          ${{ vars.SKIP_CLUSTER_VALIDATION != 'true' && '**Changes:** ' || '' }}${{ needs.cluster-validation.outputs.argocd-changes == 'true' && '📋 Changes detected' || '✅ No changes' }}
-
-          ${{ vars.SKIP_CLUSTER_VALIDATION != 'true' && '<details><summary>ArgoCD Diff</summary>\n\n```diff\n$(cat artifacts/cluster-validation-results/argocd-all-diffs.txt 2>/dev/null | head -n 300 || echo "No changes detected")\n```\n\n</details>' || '' }}
-
-          ---
-
-          ### Summary
-          - **Local Validation:** ${{ needs.local-validation.result }}
-          - **Dependency Check:** ${{ needs.dependency-check.result }}
-          - **Cluster Validation:** ${{ needs.cluster-validation.result == 'skipped' && '⏭️ Skipped' || needs.cluster-validation.result }}
-
-          ${{ (needs.local-validation.result == 'failure' || needs.dependency-check.result == 'failure' || needs.cluster-validation.result == 'failure') && '❌ **Validation FAILED** - Please fix the issues above before merging.' || '✅ **All validations PASSED**' }}
-
-          ---
-          *Validation by: @${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*
-          EOF
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Summary"
+            echo "- **Local Validation:** ${{ needs.local-validation.result }}"
+            echo "- **Dependency Check:** ${{ needs.dependency-check.result }}"
+            echo "- **Cluster Validation:** ${{ needs.cluster-validation.result == 'skipped' && '⏭️ Skipped' || needs.cluster-validation.result }}"
+            echo ""
+            echo "${{ (needs.local-validation.result == 'failure' || needs.dependency-check.result == 'failure' || needs.cluster-validation.result == 'failure') && '❌ **Validation FAILED** - Please fix the issues above before merging.' || '✅ **All validations PASSED**' }}"
+            echo ""
+            echo "---"
+            echo "*Validation by: @${{ github.actor }} | PR: #${{ github.event.pull_request.number }}*"
+          } > validation-report.md
 
           cat validation-report.md
 
