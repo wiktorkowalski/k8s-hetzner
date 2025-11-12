@@ -179,11 +179,14 @@ jobs:
           sudo mv argocd-linux-amd64 /usr/local/bin/argocd
 
       - name: Setup Kubeconfig
-        if: ${{ secrets.KUBECONFIG_BASE64 != '' }}
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
+          if [ -n "${{ secrets.KUBECONFIG_BASE64 }}" ]; then
+            mkdir -p ~/.kube
+            echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
+            chmod 600 ~/.kube/config
+          else
+            echo "⏭️  Skipping kubeconfig setup (KUBECONFIG_BASE64 not configured)"
+          fi
 
       - name: Kubectl Dry Run
         id: dryrun
