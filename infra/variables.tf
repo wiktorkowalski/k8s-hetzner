@@ -42,14 +42,14 @@ variable "network_region" {
   default     = "eu-central"
 }
 
-variable "ssh_public_key_path" {
-  description = "Path to SSH public key"
+variable "ssh_public_key" {
+  description = "SSH public key content (not path)"
   type        = string
-  default     = "~/.ssh/id_ed25519.pub"
+  sensitive   = false
 }
 
-variable "ssh_private_key_path" {
-  description = "Path to SSH private key"
+variable "ssh_private_key" {
+  description = "SSH private key content (not path)"
   type        = string
-  default     = "~/.ssh/id_ed25519"
+  sensitive   = true
 }

@@ -2,14 +2,13 @@ module "kube-hetzner" {
   source  = "kube-hetzner/kube-hetzner/hcloud"
   version = "2.18.4"
 
-  hcloud_token = var.hcloud_token != "" ? var.hcloud_token : env("HCLOUD_TOKEN")
   providers = {
     hcloud = hcloud
   }
 
   # SSH Configuration
-  ssh_public_key  = file(var.ssh_public_key_path)
-  ssh_private_key = file(var.ssh_private_key_path)
+  ssh_public_key  = var.ssh_public_key
+  ssh_private_key = var.ssh_private_key
 
   # Network Configuration
   network_region = var.network_region
