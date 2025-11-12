@@ -1,0 +1,5 @@
+# Local configuration (contains your actual values)
+config.env
+
+# Backup files created by apply-config.sh
+*.bak

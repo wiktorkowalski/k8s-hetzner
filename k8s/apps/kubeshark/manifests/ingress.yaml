@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kubeshark
+  namespace: kubeshark
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`kubeshark.k8s.k8s.vicio.ovh`)  # UPDATE THIS
+      kind: Rule
+      services:
+        - name: kubeshark-front
+          port: 80
+  tls:
+    certResolver: default
+    domains:
+      - main: kubeshark.k8s.k8s.vicio.ovh  # UPDATE THIS

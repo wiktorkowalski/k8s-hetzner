@@ -1,0 +1,78 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tempo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: tempo
+    targetRevision: 1.10.5
+    helm:
+      releaseName: tempo
+      values: |
+        tempo:
+          repository: grafana/tempo
+          tag: 2.7.0
+
+          receivers:
+            jaeger:
+              protocols:
+                thrift_http:
+                  endpoint: 0.0.0.0:14268
+                grpc:
+                  endpoint: 0.0.0.0:14250
+                thrift_compact:
+                  endpoint: 0.0.0.0:6831
+            zipkin:
+              endpoint: 0.0.0.0:9411
+            otlp:
+              protocols:
+                http:
+                  endpoint: 0.0.0.0:4318
+                grpc:
+                  endpoint: 0.0.0.0:4317
+            opencensus:
+              endpoint: 0.0.0.0:55678
+
+          storage:
+            trace:
+              backend: local
+              local:
+                path: /var/tempo/traces
+              wal:
+                path: /var/tempo/wal
+
+        persistence:
+          enabled: true
+          size: 50Gi
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+
+        service:
+          type: ClusterIP
+
+        serviceMonitor:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tracing
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

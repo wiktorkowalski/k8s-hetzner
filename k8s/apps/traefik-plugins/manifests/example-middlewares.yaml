@@ -1,0 +1,83 @@
+# Example Traefik Plugin Middlewares
+#
+# These are examples - uncomment and customize as needed
+# Requires Traefik to be configured with plugins enabled
+
+---
+# Rate Limiting - 100 requests per minute per IP
+# apiVersion: traefik.io/v1alpha1
+# kind: Middleware
+# metadata:
+#   name: rate-limit-standard
+#   namespace: default
+# spec:
+#   plugin:
+#     ratelimit:
+#       average: 100
+#       period: 1m
+#       burst: 50
+
+---
+# Strict Rate Limiting - For sensitive endpoints
+# apiVersion: traefik.io/v1alpha1
+# kind: Middleware
+# metadata:
+#   name: rate-limit-strict
+#   namespace: default
+# spec:
+#   plugin:
+#     ratelimit:
+#       average: 20
+#       period: 1m
+#       burst: 5
+
+---
+# GeoIP Blocking - Block specific countries
+# apiVersion: traefik.io/v1alpha1
+# kind: Middleware
+# metadata:
+#   name: geoblock
+#   namespace: default
+# spec:
+#   plugin:
+#     geoblock:
+#       allowLocalRequests: true
+#       logAllowedRequests: false
+#       api: https://get.geojs.io/v1/ip/country/{ip}
+#       apiTimeoutMs: 500
+#       cacheSize: 100
+#       blackListMode: true
+#       countries:
+#         - CN  # China
+#         - RU  # Russia
+
+---
+# Fail2Ban - Auto-ban malicious IPs
+# apiVersion: traefik.io/v1alpha1
+# kind: Middleware
+# metadata:
+#   name: fail2ban
+#   namespace: default
+# spec:
+#   plugin:
+#     fail2ban:
+#       rules:
+#         bantime: 3h
+#         findtime: 10m
+#         maxretry: 4
+#         enabled: true
+
+---
+# Real IP - Get real client IP behind CloudFlare
+# apiVersion: traefik.io/v1alpha1
+# kind: Middleware
+# metadata:
+#   name: real-ip
+#   namespace: default
+# spec:
+#   plugin:
+#     real-ip:
+#       excludednets:
+#         - 10.0.0.0/8
+#         - 192.168.0.0/16
+#         - 172.16.0.0/12

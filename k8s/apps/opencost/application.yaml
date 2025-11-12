@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opencost
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://opencost.github.io/opencost-helm-chart
+    chart: opencost
+    targetRevision: 1.45.1
+    helm:
+      releaseName: opencost
+      values: |
+        opencost:
+          exporter:
+            defaultClusterId: k8s-hetzner-prod  # UPDATE THIS to match your cluster name
+
+            # Prometheus configuration
+            prometheus:
+              internal:
+                enabled: false  # We're using kube-prometheus-stack
+              external:
+                enabled: true
+                url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+
+          ui:
+            enabled: true
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: 100m
+                memory: 128Mi
+
+        # Service configuration
+        service:
+          type: ClusterIP
+
+        # ServiceMonitor for Prometheus
+        serviceMonitor:
+          enabled: true
+          namespace: monitoring
+
+        # Persistent volume for cost data
+        persistence:
+          enabled: true
+          size: 5Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: opencost
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

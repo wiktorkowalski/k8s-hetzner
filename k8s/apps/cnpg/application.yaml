@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudnative-pg
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://cloudnative-pg.github.io/charts
+    chart: cloudnative-pg
+    targetRevision: 0.22.2
+    helm:
+      releaseName: cloudnative-pg
+      values: |
+        # Operator configuration
+        replicaCount: 1
+
+        config:
+          # Enable monitoring
+          enable_azure_pvc_updates: false
+
+        monitoring:
+          # Enable Prometheus monitoring
+          podMonitorEnabled: true
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+
+        # Webhook configuration
+        webhook:
+          port: 9443
+          mutating:
+            create: true
+          validating:
+            create: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cnpg-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

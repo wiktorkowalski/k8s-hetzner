@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`alertmanager.k8s.k8s.vicio.ovh`)  # UPDATE THIS
+      kind: Rule
+      services:
+        - name: kube-prometheus-stack-alertmanager
+          port: 9093
+  tls:
+    certResolver: default
+    domains:
+      - main: alertmanager.k8s.k8s.vicio.ovh  # UPDATE THIS

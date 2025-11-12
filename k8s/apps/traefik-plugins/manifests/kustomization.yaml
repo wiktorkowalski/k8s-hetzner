@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Example middlewares are commented out
+  # Uncomment after enabling plugins in Traefik
+  # - example-middlewares.yaml

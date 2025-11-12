@@ -1,0 +1,32 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: headlamp
+  namespace: headlamp
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`headlamp.k8s.vicio.ovh`)
+      kind: Rule
+      services:
+        - name: headlamp
+          port: 80
+  tls:
+    secretName: headlamp-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: headlamp-cert
+  namespace: headlamp
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: headlamp.k8s.vicio.ovh
+  tls:
+  - hosts:
+    - headlamp.k8s.vicio.ovh
+    secretName: headlamp-tls

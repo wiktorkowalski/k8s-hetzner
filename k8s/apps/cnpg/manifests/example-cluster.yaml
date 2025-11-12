@@ -1,0 +1,85 @@
+# Example PostgreSQL Cluster
+# This is a sample - copy and customize for your needs
+#
+# To create a production database:
+# 1. Copy this file to your namespace
+# 2. Update the cluster name, database name, and storage size
+# 3. Uncomment backup configuration and configure S3/Azure/GCS
+# 4. Apply: kubectl apply -f your-cluster.yaml
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-example
+  namespace: default
+spec:
+  # Number of instances (3 for HA with automatic failover)
+  instances: 3
+
+  # PostgreSQL version
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.3
+
+  # Storage configuration
+  storage:
+    size: 10Gi
+    storageClass: longhorn  # Use Longhorn storage
+
+  # Resources
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 1Gi
+
+  # Bootstrap with initial database
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+      # Secret with password will be auto-generated: postgres-example-app
+
+  # Monitoring
+  monitoring:
+    enablePodMonitor: true
+
+  # PostgreSQL configuration
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+      maintenance_work_mem: "64MB"
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "16MB"
+      default_statistics_target: "100"
+      random_page_cost: "1.1"
+      effective_io_concurrency: "200"
+      work_mem: "2621kB"
+      min_wal_size: "1GB"
+      max_wal_size: "4GB"
+
+  # Backup configuration (uncomment and configure for production)
+  # backup:
+  #   barmanObjectStore:
+  #     destinationPath: s3://my-bucket/postgres-backups/
+  #     s3Credentials:
+  #       accessKeyId:
+  #         name: aws-credentials
+  #         key: ACCESS_KEY_ID
+  #       secretAccessKey:
+  #         name: aws-credentials
+  #         key: SECRET_ACCESS_KEY
+  #     wal:
+  #       compression: gzip
+  #     data:
+  #       compression: gzip
+  #   retentionPolicy: "30d"
+
+  # Connection pooling with PgBouncer
+  # pgBouncer:
+  #   poolMode: transaction
+  #   parameters:
+  #     max_client_conn: "1000"
+  #     default_pool_size: "25"

@@ -1,0 +1,155 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 67.4.0
+    helm:
+      releaseName: kube-prometheus-stack
+      values: |
+        # Prometheus configuration
+        prometheus:
+          prometheusSpec:
+            retention: 30d
+            retentionSize: "50GB"
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 50Gi
+            resources:
+              requests:
+                cpu: 500m
+                memory: 2Gi
+              limits:
+                cpu: 2000m
+                memory: 4Gi
+            # Enable remote write to Mimir (optional - configure later)
+            # remoteWrite: []
+
+        # Alertmanager configuration
+        alertmanager:
+          alertmanagerSpec:
+            retention: 120h
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 10Gi
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+
+        # Grafana configuration
+        grafana:
+          enabled: true
+          adminPassword: "admin"  # CHANGE THIS! Use sealed-secrets for production
+          persistence:
+            enabled: true
+            size: 10Gi
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          # Additional datasources
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              url: http://loki-gateway.logging.svc.cluster.local
+              access: proxy
+            - name: Tempo
+              type: tempo
+              url: http://tempo.tracing.svc.cluster.local:3100
+              access: proxy
+          # Pre-installed dashboards
+          dashboardProviders:
+            dashboardproviders.yaml:
+              apiVersion: 1
+              providers:
+                - name: 'default'
+                  orgId: 1
+                  folder: ''
+                  type: file
+                  disableDeletion: false
+                  editable: true
+                  options:
+                    path: /var/lib/grafana/dashboards/default
+          # Grafana plugins
+          plugins:
+            - grafana-piechart-panel
+            - grafana-clock-panel
+
+        # Prometheus Operator
+        prometheusOperator:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+        # Node Exporter (collects node metrics)
+        nodeExporter:
+          enabled: true
+
+        # Kube State Metrics (collects k8s object metrics)
+        kubeStateMetrics:
+          enabled: true
+
+        # Default rules and alerts
+        defaultRules:
+          create: true
+          rules:
+            alertmanager: true
+            etcd: true
+            general: true
+            k8s: true
+            kubeApiserver: true
+            kubeApiserverAvailability: true
+            kubeApiserverSlos: true
+            kubelet: true
+            kubePrometheusGeneral: true
+            kubePrometheusNodeRecording: true
+            kubernetesApps: true
+            kubernetesResources: true
+            kubernetesStorage: true
+            kubernetesSystem: true
+            kubeScheduler: true
+            kubeStateMetrics: true
+            network: true
+            node: true
+            prometheus: true
+            prometheusOperator: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

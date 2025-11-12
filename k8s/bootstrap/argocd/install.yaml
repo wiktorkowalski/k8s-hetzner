@@ -1,0 +1,20 @@
+# ArgoCD Installation
+# This file references the official ArgoCD installation manifest
+# To install: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+#
+# Or for a specific version (recommended):
+# kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.2/manifests/install.yaml
+#
+# After installation, apply the ingress and configuration from ../apps/argocd/
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cmd-params-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cmd-params-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  # Enable insecure mode since we're terminating TLS at Traefik
+  server.insecure: "true"

@@ -1,0 +1,93 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubeshark
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://helm.kubeshark.co
+    chart: kubeshark
+    targetRevision: 52.3.94
+    helm:
+      releaseName: kubeshark
+      values: |
+        tap:
+          # Traffic capture configuration
+          namespaces: []  # Empty means all namespaces
+          # To limit to specific namespaces:
+          # namespaces:
+          #   - default
+          #   - production
+
+          # Resource limits for tapper pods (one per node)
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 750m
+              memory: 1Gi
+
+          # Packet capture settings
+          packetCapture: libpcap  # or ebpf
+          serviceMesh: false  # Set to true if using Istio/Linkerd
+          tls: true  # Capture TLS traffic
+
+        # Frontend configuration
+        front:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+        # Hub (backend) configuration
+        hub:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+
+        # Worker configuration
+        worker:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+        # Storage for captured traffic
+        persistentStorage:
+          enabled: true
+          size: 10Gi
+
+        # Service configuration
+        service:
+          type: ClusterIP
+
+        # Ingress disabled (using Traefik IngressRoute)
+        ingress:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubeshark
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
