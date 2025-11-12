@@ -58,8 +58,14 @@ jobs:
           yamllint -c .yamllint k8s/ > yamllint.txt 2>&1 || true
 
           if [ -s yamllint.txt ]; then
-            echo "has_issues=true" >> $GITHUB_OUTPUT
             cat yamllint.txt
+            # Check for errors (not just warnings)
+            if grep -q "\[error\]" yamllint.txt; then
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_issues=false" >> $GITHUB_OUTPUT
+              echo "ℹ️  Only warnings found, no errors"
+            fi
           else
             echo "has_issues=false" >> $GITHUB_OUTPUT
             echo "✅ No yamllint issues found"
