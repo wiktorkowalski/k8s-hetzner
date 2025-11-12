@@ -33,6 +33,7 @@ variable "cluster_name" {
   description = "Name of the Kubernetes cluster"
   type        = string
   default     = "k8s-hetzner"
+  # Cluster name is used for resource naming in Hetzner Cloud
 }
 
 variable "network_region" {
