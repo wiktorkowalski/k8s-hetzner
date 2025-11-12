@@ -15,12 +15,12 @@ spec:
     spec:
       serviceAccountName: headlamp
       containers:
-      - name: headlamp
-        image: ghcr.io/headlamp-k8s/headlamp:latest
-        ports:
-        - containerPort: 4466
-        resources:
-          requests:
+        - name: headlamp
+          image: ghcr.io/headlamp-k8s/headlamp:latest
+          ports:
+            - containerPort: 4466
+          resources:
+            requests:
             cpu: 100m
             memory: 128Mi
           limits:
@@ -36,8 +36,8 @@ spec:
   selector:
     app: headlamp
   ports:
-  - port: 80
-    targetPort: 4466
+    - port: 80
+      targetPort: 4466
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -54,6 +54,6 @@ roleRef:
   kind: ClusterRole
   name: cluster-admin
 subjects:
-- kind: ServiceAccount
-  name: headlamp
-  namespace: headlamp
+  - kind: ServiceAccount
+    name: headlamp
+    namespace: headlamp

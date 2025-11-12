@@ -9,17 +9,17 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-  - host: argocd.k8s.vicio.ovh
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: argocd-server
-            port:
-              number: 80
+    - host: argocd.k8s.vicio.ovh
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80
   tls:
-  - hosts:
-    - argocd.k8s.vicio.ovh
-    secretName: argocd-tls
+    - hosts:
+        - argocd.k8s.vicio.ovh
+      secretName: argocd-tls
