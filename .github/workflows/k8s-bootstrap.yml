@@ -1,0 +1,152 @@
+name: Bootstrap Kubernetes
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_root_app:
+        description: 'Apply root application after ArgoCD install'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap:
+    name: Bootstrap ArgoCD
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        run: |
+          curl -sLO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          sudo mv kubectl /usr/local/bin/
+
+      - name: Setup Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster access
+        run: |
+          echo "Checking cluster connectivity..."
+          kubectl cluster-info
+          kubectl get nodes
+          echo ""
+          echo "Cluster is accessible ✅"
+
+      - name: Check if ArgoCD already installed
+        id: check_argocd
+        run: |
+          if kubectl get namespace argocd &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️  ArgoCD namespace already exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ ArgoCD not found, will install"
+          fi
+
+      - name: Install ArgoCD
+        if: steps.check_argocd.outputs.exists == 'false'
+        run: |
+          echo "Installing ArgoCD..."
+          kubectl apply -k k8s/bootstrap/argocd/
+
+          echo ""
+          echo "Waiting for ArgoCD to be ready..."
+          kubectl wait --for=condition=ready pod \
+            -l app.kubernetes.io/name=argocd-server \
+            -n argocd \
+            --timeout=600s
+
+          echo ""
+          echo "✅ ArgoCD installation complete"
+
+      - name: Get ArgoCD admin password
+        id: get_password
+        run: |
+          echo "Fetching ArgoCD admin password..."
+          PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+          echo "password=$PASSWORD" >> $GITHUB_OUTPUT
+          echo "✅ Password retrieved"
+
+      - name: Apply root application
+        if: github.event.inputs.apply_root_app == 'true'
+        run: |
+          echo "Applying root application..."
+          kubectl apply -f k8s/root-app/root-application.yaml
+
+          echo ""
+          echo "Waiting for root-app to be created..."
+          sleep 10
+
+          echo ""
+          echo "✅ Root application applied"
+
+      - name: Get ArgoCD UI URL
+        id: get_url
+        run: |
+          # Wait for ingress to be created
+          echo "Checking for ArgoCD ingress..."
+          for i in {1..30}; do
+            if kubectl get ingress -n argocd argocd-server &>/dev/null; then
+              HOST=$(kubectl get ingress -n argocd argocd-server -o jsonpath='{.spec.rules[0].host}')
+              if [ -n "$HOST" ]; then
+                echo "url=https://$HOST" >> $GITHUB_OUTPUT
+                echo "✅ ArgoCD URL: https://$HOST"
+                break
+              fi
+            fi
+            echo "Waiting for ingress... ($i/30)"
+            sleep 10
+          done
+
+          if [ -z "$HOST" ]; then
+            echo "url=Not configured yet" >> $GITHUB_OUTPUT
+            echo "⚠️  Ingress not found, check ArgoCD apps"
+          fi
+
+      - name: List all applications
+        if: github.event.inputs.apply_root_app == 'true'
+        run: |
+          echo "Listing ArgoCD applications..."
+          sleep 5
+          kubectl get applications -n argocd -o wide || echo "No applications found yet"
+
+      - name: Output bootstrap summary
+        run: |
+          echo "### 🚀 Bootstrap Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Cluster:** ${{ secrets.CLUSTER_NAME || 'k8s-hetzner' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**ArgoCD Status:** ${{ steps.check_argocd.outputs.exists == 'true' && '✅ Already installed' || '✅ Newly installed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Root App:** ${{ github.event.inputs.apply_root_app == 'true' && '✅ Applied' || '⏭️ Skipped' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔐 ArgoCD Access" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** ${{ steps.get_url.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Username:** admin" >> $GITHUB_STEP_SUMMARY
+          echo "**Password:** \`${{ steps.get_password.outputs.password }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> ⚠️  **Important:** Change the admin password immediately after first login!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. Access ArgoCD UI at the URL above" >> $GITHUB_STEP_SUMMARY
+          echo "2. Login with admin credentials" >> $GITHUB_STEP_SUMMARY
+          echo "3. Change admin password" >> $GITHUB_STEP_SUMMARY
+          echo "4. Configure GitHub Actions secrets:" >> $GITHUB_STEP_SUMMARY
+          echo "   - \`ARGOCD_SERVER\`: \`${{ steps.get_url.outputs.url }}\` (without https://)" >> $GITHUB_STEP_SUMMARY
+          echo "   - \`ARGOCD_AUTH_TOKEN\`: Generate from ArgoCD UI → Settings → Accounts → admin → Tokens" >> $GITHUB_STEP_SUMMARY
+          echo "5. Monitor applications syncing" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if bootstrap incomplete
+        if: steps.check_argocd.outputs.exists == 'false' && steps.get_password.outputs.password == ''
+        run: |
+          echo "::error::Bootstrap failed - ArgoCD not properly installed"
+          exit 1

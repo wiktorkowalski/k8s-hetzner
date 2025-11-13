@@ -38,7 +38,19 @@ jobs:
           chmod +x argocd-linux-amd64
           sudo mv argocd-linux-amd64 /usr/local/bin/argocd
 
+      - name: Check secrets configured
+        id: check_secrets
+        run: |
+          if [ -z "${{ secrets.ARGOCD_SERVER }}" ] || [ -z "${{ secrets.ARGOCD_AUTH_TOKEN }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "⚠️  ArgoCD secrets not configured"
+            echo "Run the 'Bootstrap Kubernetes' workflow first to set up ArgoCD"
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: ArgoCD Login
+        if: steps.check_secrets.outputs.configured == 'true'
         run: |
           argocd login ${{ secrets.ARGOCD_SERVER }} \
             --auth-token ${{ secrets.ARGOCD_AUTH_TOKEN }} \
@@ -46,6 +58,7 @@ jobs:
 
       - name: Sync Root App
         id: sync
+        if: steps.check_secrets.outputs.configured == 'true'
         run: |
           APP_NAME="${{ github.event.inputs.app_name || 'root-app' }}"
           PRUNE_FLAG=""
@@ -71,15 +84,31 @@ jobs:
           echo "sync=$SYNC" >> $GITHUB_OUTPUT
 
       - name: List All Apps Status
-        if: always()
+        if: always() && steps.check_secrets.outputs.configured == 'true'
         run: |
           echo "Getting status of all applications..."
-          argocd app list -o wide > apps-status.txt
+          argocd app list -o wide > apps-status.txt 2>&1 || echo "Unable to list apps" > apps-status.txt
           cat apps-status.txt
 
       - name: Output Summary
         if: always()
         run: |
+          if [ "${{ steps.check_secrets.outputs.configured }}" != "true" ]; then
+            echo "### ⚠️ ArgoCD Not Configured" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "ArgoCD secrets (\`ARGOCD_SERVER\`, \`ARGOCD_AUTH_TOKEN\`) are not configured." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Run the **Bootstrap Kubernetes** workflow (Actions → Bootstrap Kubernetes → Run workflow)" >> $GITHUB_STEP_SUMMARY
+            echo "2. Get the admin password from the bootstrap workflow output" >> $GITHUB_STEP_SUMMARY
+            echo "3. Access ArgoCD UI and create an auth token" >> $GITHUB_STEP_SUMMARY
+            echo "4. Add secrets to GitHub:" >> $GITHUB_STEP_SUMMARY
+            echo "   - Settings → Secrets and variables → Actions → New repository secret" >> $GITHUB_STEP_SUMMARY
+            echo "   - Add \`ARGOCD_SERVER\` (e.g., \`argocd.k8s.yourdomain.com\`)" >> $GITHUB_STEP_SUMMARY
+            echo "   - Add \`ARGOCD_AUTH_TOKEN\` (from ArgoCD UI)" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
           APP_NAME="${{ github.event.inputs.app_name || 'root-app' }}"
 
           echo "### ArgoCD Sync Summary" >> $GITHUB_STEP_SUMMARY
@@ -101,12 +130,12 @@ jobs:
           echo "<details><summary>All Apps Status</summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          cat apps-status.txt >> $GITHUB_STEP_SUMMARY
+          cat apps-status.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "No apps data" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "</details>" >> $GITHUB_STEP_SUMMARY
 
       - name: Check Sync Health
-        if: steps.sync.outputs.health != 'Healthy'
+        if: steps.check_secrets.outputs.configured == 'true' && steps.sync.outputs.health != 'Healthy'
         run: |
           echo "::error::Application is not healthy after sync: ${{ steps.sync.outputs.health }}"
           exit 1
