@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git  # UPDATE THIS
-    targetRevision: main
+    targetRevision: master
     path: k8s/apps/kubeshark/manifests
   destination:
     server: https://kubernetes.default.svc
