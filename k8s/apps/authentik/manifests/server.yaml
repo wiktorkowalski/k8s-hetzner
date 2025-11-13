@@ -9,10 +9,10 @@ spec:
     component: server
   ports:
     - name: http
-      port: 80
+      port: 9000
       targetPort: 9000
     - name: https
-      port: 443
+      port: 9443
       targetPort: 9443
 ---
 apiVersion: apps/v1
