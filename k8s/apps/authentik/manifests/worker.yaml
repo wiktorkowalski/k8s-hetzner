@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentik-worker
+  namespace: authentik
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: authentik
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: authentik
+        component: worker
+    spec:
+      containers:
+        - name: authentik
+          image: ghcr.io/goauthentik/server:2025.10.1
+          args: ["worker"]
+          envFrom:
+            - secretRef:
+                name: authentik
+          env:
+            - name: AUTHENTIK_REDIS__HOST
+              value: "authentik-redis"
+            - name: AUTHENTIK_ERROR_REPORTING__ENABLED
+              value: "false"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
