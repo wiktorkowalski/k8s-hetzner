@@ -16,6 +16,8 @@ jobs:
   terraform-apply:
     name: Terraform Apply
     runs-on: ubuntu-latest
+    outputs:
+      apply_outcome: ${{ steps.apply.outcome }}
     defaults:
       run:
         working-directory: infra
@@ -51,6 +53,17 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.apply.outcome }}" == "success" ]; then
             echo "✅ Infrastructure updated successfully" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Next:** ArgoCD bootstrap will run automatically" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Apply failed - check logs" >> $GITHUB_STEP_SUMMARY
           fi
+
+  bootstrap-cluster:
+    name: Bootstrap ArgoCD
+    needs: terraform-apply
+    if: needs.terraform-apply.outputs.apply_outcome == 'success'
+    uses: ./.github/workflows/k8s-bootstrap.yml
+    secrets: inherit
+    with:
+      apply_root_app: true

@@ -8,6 +8,13 @@ on:
         required: false
         type: boolean
         default: true
+  workflow_call:
+    inputs:
+      apply_root_app:
+        description: 'Apply root application after ArgoCD install'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
