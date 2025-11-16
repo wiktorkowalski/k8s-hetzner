@@ -24,10 +24,9 @@ spec:
         cert-manager:
           enabled: false  # Already installed
         extraArgs:
-          - --enable-skip-login
-          - --disable-settings-authorizer
-          - --enable-insecure-login
           - --system-banner="K8s Hetzner Production Cluster"
+          - --authentication-mode=token
+          - --enable-skip-login=false
   destination:
     server: https://kubernetes.default.svc
     namespace: kubernetes-dashboard

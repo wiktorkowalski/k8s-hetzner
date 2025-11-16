@@ -17,7 +17,7 @@ spec:
           error_reporting:
             enabled: false
           postgresql:
-            host: "authentik-postgresql"
+            host: "authentik-postgres-rw"
             name: "authentik"
             user: "authentik"
             password: "authentik-postgres-pass"
@@ -40,14 +40,7 @@ spec:
           replicas: 1
 
         postgresql:
-          enabled: true
-          auth:
-            username: authentik
-            password: authentik-postgres-pass
-            database: authentik
-          primary:
-            persistence:
-              size: 2Gi
+          enabled: false
 
         redis:
           enabled: true
