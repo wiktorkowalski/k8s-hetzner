@@ -1,0 +1,149 @@
+# CloudNativePG Playground Cluster
+# A test cluster to explore CNPG features
+#
+# Features demonstrated:
+# - Basic PostgreSQL cluster configuration
+# - Custom database initialization
+# - Resource limits
+# - Monitoring integration
+# - PostgreSQL configuration tuning
+#
+# To connect to this database:
+# kubectl get secret -n cnpg-playground playground-db-app -o jsonpath='{.data.password}' | base64 -d
+# kubectl port-forward -n cnpg-playground svc/playground-db-rw 5432:5432
+# psql -h localhost -U app -d appdb
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cnpg-playground
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: playground-db
+  namespace: cnpg-playground
+spec:
+  # Start with 1 instance for testing
+  # Scale to 3 for HA: kubectl cnpg scale playground-db --replicas 3 -n cnpg-playground
+  instances: 1
+
+  # PostgreSQL 16 (latest stable)
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.3
+
+  # Storage configuration using Longhorn
+  storage:
+    size: 5Gi
+    storageClass: longhorn
+
+  # Resource limits (small for playground)
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  # Bootstrap with initial database and user
+  bootstrap:
+    initdb:
+      database: appdb
+      owner: app
+      # Additional setup SQL can be added here
+      # postInitSQL:
+      #   - CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+      #   - CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+  # Enable Prometheus monitoring
+  monitoring:
+    enablePodMonitor: true
+
+  # PostgreSQL configuration
+  postgresql:
+    # PostgreSQL version parameters
+    parameters:
+      # Connection settings
+      max_connections: "100"
+
+      # Memory settings
+      shared_buffers: "256MB"
+      effective_cache_size: "768MB"
+      maintenance_work_mem: "64MB"
+      work_mem: "5MB"
+
+      # Write-Ahead Log settings
+      wal_buffers: "8MB"
+      min_wal_size: "512MB"
+      max_wal_size: "2GB"
+
+      # Query planner
+      random_page_cost: "1.1"  # SSD-optimized
+      effective_io_concurrency: "200"
+
+      # Logging (useful for debugging)
+      log_min_duration_statement: "1000"  # Log queries > 1s
+      log_line_prefix: "%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h "
+
+      # Performance
+      checkpoint_completion_target: "0.9"
+
+  # Affinity rules (optional - spread replicas across nodes)
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+
+# Uncomment below to add backup configuration
+# Requires S3-compatible storage (MinIO, AWS S3, etc.)
+#
+# ---
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: aws-credentials
+#   namespace: cnpg-playground
+# type: Opaque
+# stringData:
+#   ACCESS_KEY_ID: "your-access-key"
+#   SECRET_ACCESS_KEY: "your-secret-key"
+#
+# Then add to Cluster spec:
+#   backup:
+#     barmanObjectStore:
+#       destinationPath: s3://my-bucket/playground-backups/
+#       s3Credentials:
+#         accessKeyId:
+#           name: aws-credentials
+#           key: ACCESS_KEY_ID
+#         secretAccessKey:
+#           name: aws-credentials
+#           key: SECRET_ACCESS_KEY
+#       wal:
+#         compression: gzip
+#       data:
+#         compression: gzip
+#     retentionPolicy: "7d"
+
+# Useful commands:
+#
+# View cluster status:
+#   kubectl cnpg status playground-db -n cnpg-playground
+#
+# Get connection details:
+#   kubectl get secret playground-db-app -n cnpg-playground -o yaml
+#
+# Scale cluster:
+#   kubectl cnpg scale playground-db --replicas 3 -n cnpg-playground
+#
+# Promote replica (for testing failover):
+#   kubectl cnpg promote playground-db-2 -n cnpg-playground
+#
+# Create a manual backup (requires backup config):
+#   kubectl cnpg backup playground-db -n cnpg-playground
+#
+# List backups:
+#   kubectl get backups -n cnpg-playground
+#
+# Restore from backup:
+#   See: https://cloudnative-pg.io/documentation/current/backup_recovery/
