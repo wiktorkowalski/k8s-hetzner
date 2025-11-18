@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`loki.k8s.k8s.vicio.ovh`)  # UPDATE THIS
+    - match: Host(`loki.k8s.vicio.ovh`)
       kind: Rule
       services:
         - name: loki-gateway
@@ -15,4 +15,4 @@ spec:
   tls:
     certResolver: default
     domains:
-      - main: loki.k8s.k8s.vicio.ovh  # UPDATE THIS
+      - main: loki.k8s.vicio.ovh

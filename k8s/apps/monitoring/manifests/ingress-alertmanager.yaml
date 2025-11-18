@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`alertmanager.k8s.k8s.vicio.ovh`)  # UPDATE THIS
+    - match: Host(`alertmanager.k8s.vicio.ovh`)
       kind: Rule
       services:
         - name: kube-prometheus-stack-alertmanager
@@ -15,4 +15,4 @@ spec:
   tls:
     certResolver: default
     domains:
-      - main: alertmanager.k8s.k8s.vicio.ovh  # UPDATE THIS
+      - main: alertmanager.k8s.vicio.ovh

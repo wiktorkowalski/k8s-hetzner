@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`grafana.k8s.k8s.vicio.ovh`)  # UPDATE THIS
+    - match: Host(`grafana.k8s.vicio.ovh`)
       kind: Rule
       services:
         - name: kube-prometheus-stack-grafana
@@ -15,4 +15,4 @@ spec:
   tls:
     certResolver: default
     domains:
-      - main: grafana.k8s.k8s.vicio.ovh  # UPDATE THIS
+      - main: grafana.k8s.vicio.ovh

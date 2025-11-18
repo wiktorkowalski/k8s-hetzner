@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git  # UPDATE THIS
+    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
     targetRevision: master
     path: k8s/apps/cnpg/manifests
   destination:

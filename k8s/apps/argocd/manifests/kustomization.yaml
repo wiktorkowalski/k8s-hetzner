@@ -8,3 +8,4 @@ resources:
   - argocd-cm.yaml
   - argocd-rbac-cm.yaml
   - ingress.yaml
+  - servicemonitor.yaml

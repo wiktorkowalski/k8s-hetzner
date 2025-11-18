@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: kubernetes-dashboard
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: kubernetes-dashboard
+    app.kubernetes.io/component: management
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
   source:

@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: opencost
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: opencost
+    app.kubernetes.io/component: cost-management
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
   source:
@@ -14,7 +20,7 @@ spec:
       values: |
         opencost:
           exporter:
-            defaultClusterId: k8s-hetzner-prod  # UPDATE THIS to match your cluster name
+            defaultClusterId: k8s-hetzner-prod
 
             # Prometheus configuration
             prometheus:

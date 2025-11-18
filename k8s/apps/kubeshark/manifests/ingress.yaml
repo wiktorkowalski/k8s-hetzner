@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`kubeshark.k8s.k8s.vicio.ovh`)  # UPDATE THIS
+    - match: Host(`kubeshark.k8s.vicio.ovh`)
       kind: Rule
       services:
         - name: kubeshark-front
@@ -15,4 +15,4 @@ spec:
   tls:
     certResolver: default
     domains:
-      - main: kubeshark.k8s.k8s.vicio.ovh  # UPDATE THIS
+      - main: kubeshark.k8s.vicio.ovh

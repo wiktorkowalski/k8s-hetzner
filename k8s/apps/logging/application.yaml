@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: loki
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: loki
+    app.kubernetes.io/component: logging
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
   source:
@@ -94,6 +100,12 @@ kind: Application
 metadata:
   name: promtail
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: promtail
+    app.kubernetes.io/component: logging
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
   source:

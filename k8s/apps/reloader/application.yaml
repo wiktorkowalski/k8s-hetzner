@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: reloader
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: reloader
+    app.kubernetes.io/component: automation
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
