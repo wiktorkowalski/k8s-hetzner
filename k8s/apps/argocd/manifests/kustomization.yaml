@@ -5,4 +5,7 @@ resources:
   - clusterissuer.yaml
   - certificate.yaml
   - argocd-cmd-params-cm.yaml
+  - argocd-cm.yaml
+  - argocd-rbac-cm.yaml
   - ingress.yaml
+  - servicemonitor.yaml

@@ -1,0 +1,62 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: authentik-postgres
+  namespace: authentik
+spec:
+  instances: 1
+
+  postgresql:
+    parameters:
+      max_connections: "100"
+      shared_buffers: "256MB"
+
+  storage:
+    size: 2Gi
+    storageClass: longhorn
+
+  bootstrap:
+    initdb:
+      database: authentik
+      owner: authentik
+      secret:
+        name: authentik-postgres-credentials
+
+  monitoring:
+    enablePodMonitor: false
+
+  # Backup configuration - uncomment and configure S3 credentials when ready
+  # backup:
+  #   retentionPolicy: "7d"
+  #   barmanObjectStore:
+  #     destinationPath: s3://authentik-backups/
+  #     s3Credentials:
+  #       accessKeyId:
+  #         name: authentik-postgres-backup-s3
+  #         key: ACCESS_KEY_ID
+  #       secretAccessKey:
+  #         name: authentik-postgres-backup-s3
+  #         key: SECRET_ACCESS_KEY
+  #     wal:
+  #       compression: gzip
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: authentik-postgres-credentials
+  namespace: authentik
+type: kubernetes.io/basic-auth
+stringData:
+  username: authentik
+  password: authentik-postgres-pass
+---
+# Uncomment when S3 backup is configured
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: authentik-postgres-backup-s3
+#   namespace: authentik
+# type: Opaque
+# stringData:
+#   ACCESS_KEY_ID: ""
+#   SECRET_ACCESS_KEY: ""

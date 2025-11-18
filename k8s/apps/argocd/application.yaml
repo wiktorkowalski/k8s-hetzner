@@ -3,10 +3,16 @@ kind: Application
 metadata:
   name: argocd-config
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-config
+    app.kubernetes.io/component: gitops
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
   source:
-    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git  # UPDATE THIS
+    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
     targetRevision: master
     path: k8s/apps/argocd/manifests
   destination:
@@ -18,3 +24,9 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

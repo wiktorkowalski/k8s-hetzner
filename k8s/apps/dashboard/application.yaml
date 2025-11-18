@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: kubernetes-dashboard
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: kubernetes-dashboard
+    app.kubernetes.io/component: management
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
   source:
@@ -24,10 +30,9 @@ spec:
         cert-manager:
           enabled: false  # Already installed
         extraArgs:
-          - --enable-skip-login
-          - --disable-settings-authorizer
-          - --enable-insecure-login
           - --system-banner="K8s Hetzner Production Cluster"
+          - --authentication-mode=token
+          - --enable-skip-login=false
   destination:
     server: https://kubernetes.default.svc
     namespace: kubernetes-dashboard

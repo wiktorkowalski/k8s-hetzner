@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  url: https://argocd.k8s.vicio.ovh
+  oidc.config: |
+    name: Authentik
+    issuer: https://auth.k8s.vicio.ovh/application/o/argocd/
+    clientID: <SET_IN_AUTHENTIK_UI>
+    clientSecret: $oidc.authentik.clientSecret
+    requestedScopes:
+      - openid
+      - profile
+      - email
+      - groups

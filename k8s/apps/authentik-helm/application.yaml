@@ -3,56 +3,25 @@ kind: Application
 metadata:
   name: authentik
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: authentik
+    app.kubernetes.io/component: authentication
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
-  source:
-    repoURL: https://charts.goauthentik.io
-    chart: authentik
-    targetRevision: 2025.10.1
-    helm:
-      releaseName: authentik
-      values: |
-        authentik:
-          secret_key: "JEqx/2IAeCOaL8Y3hEuFmjdamKLy6GqevvZmp4o01l6C4ACFEXLaKkCmZ8WwpSv9Ux8="
-          error_reporting:
-            enabled: false
-          postgresql:
-            host: "authentik-postgresql"
-            name: "authentik"
-            user: "authentik"
-            password: "authentik-postgres-pass"
-
-        server:
-          replicas: 1
-          ingress:
-            enabled: true
-            ingressClassName: traefik
-            annotations:
-              cert-manager.io/cluster-issuer: letsencrypt-prod
-            hosts:
-              - auth.k8s.vicio.ovh
-            tls:
-              - secretName: authentik-tls
-                hosts:
-                  - auth.k8s.vicio.ovh
-
-        worker:
-          replicas: 1
-
-        postgresql:
-          enabled: true
-          auth:
-            username: authentik
-            password: authentik-postgres-pass
-            database: authentik
-          primary:
-            persistence:
-              size: 2Gi
-
-        redis:
-          enabled: true
-          auth:
-            enabled: false
+  sources:
+    - repoURL: https://charts.goauthentik.io
+      chart: authentik
+      targetRevision: 2025.10.1
+      helm:
+        releaseName: authentik
+        valueFiles:
+          - $values/k8s/apps/authentik-helm/values.yaml
+    - repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
+      targetRevision: master
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: authentik

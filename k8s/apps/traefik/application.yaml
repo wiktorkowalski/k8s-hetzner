@@ -1,17 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: authentik
+  name: traefik-dashboard
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: traefik-dashboard
+    app.kubernetes.io/component: networking
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
   source:
     repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
     targetRevision: master
-    path: k8s/apps/authentik/manifests
+    path: k8s/apps/traefik/manifests
   destination:
     server: https://kubernetes.default.svc
-    namespace: authentik
+    namespace: traefik
   syncPolicy:
     automated:
       prune: true

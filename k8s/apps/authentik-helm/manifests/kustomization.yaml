@@ -5,4 +5,4 @@ namespace: authentik
 
 resources:
   - namespace.yaml
-  - postgres-cluster.yaml
+  - postgres-cnpg.yaml

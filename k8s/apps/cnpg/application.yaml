@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: cloudnative-pg
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: cloudnative-pg
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:

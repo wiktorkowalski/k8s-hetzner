@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: sealed-secrets
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: sealed-secrets
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:

@@ -1,26 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: authelia
+  name: authentik-config
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git  # UPDATE THIS
+    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
     targetRevision: master
-    path: k8s/apps/authelia/manifests
+    path: k8s/apps/authentik-helm/manifests
   destination:
     server: https://kubernetes.default.svc
-    namespace: authelia
+    namespace: authentik
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
