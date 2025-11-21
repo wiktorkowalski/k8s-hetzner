@@ -14,17 +14,19 @@ spec:
       values: |
         config:
           baseURL: "https://headlamp.k8s.vicio.ovh"
-          oidc:
-            clientID: ret3n8Krk6LLg8QTm6WjUxY1oxQ7G4KD9kw1JeCC
-            issuerURL: https://auth.k8s.vicio.ovh/application/o/headlamp/
-            scopes: "openid,profile,email,groups"
 
         env:
-          - name: OIDC_CLIENT_SECRET
+          - name: HEADLAMP_CONFIG_OIDC_CLIENT_ID
+            value: "ret3n8Krk6LLg8QTm6WjUxY1oxQ7G4KD9kw1JeCC"
+          - name: HEADLAMP_CONFIG_OIDC_CLIENT_SECRET
             valueFrom:
               secretKeyRef:
                 name: headlamp-oidc
                 key: clientSecret
+          - name: HEADLAMP_CONFIG_OIDC_ISSUER_URL
+            value: "https://auth.k8s.vicio.ovh/application/o/headlamp/"
+          - name: HEADLAMP_CONFIG_OIDC_SCOPES
+            value: "openid,profile,email,groups"
 
         resources:
           requests:
