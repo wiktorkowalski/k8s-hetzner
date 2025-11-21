@@ -23,7 +23,7 @@ spec:
               secretKeyRef:
                 name: headlamp-oidc
                 key: clientSecret
-          - name: HEADLAMP_CONFIG_OIDC_ISSUER_URL
+          - name: HEADLAMP_CONFIG_OIDC_IDP_ISSUER_URL
             value: "https://auth.k8s.vicio.ovh/application/o/headlamp/"
           - name: HEADLAMP_CONFIG_OIDC_SCOPES
             value: "openid,profile,email,groups"
