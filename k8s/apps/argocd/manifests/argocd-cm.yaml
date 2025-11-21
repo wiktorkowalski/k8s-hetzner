@@ -8,13 +8,18 @@ metadata:
     app.kubernetes.io/part-of: argocd
 data:
   url: https://argocd.k8s.vicio.ovh
-  oidc.config: |
-    name: Authentik
-    issuer: https://auth.k8s.vicio.ovh/application/o/argocd/
-    clientID: IrkjHsniW9xKNWAx9QGViY4EcGiLV9cp00i4prEf
-    clientSecret: $oidc.authentik.clientSecret
-    requestedScopes:
-      - openid
-      - profile
-      - email
-      - groups
+  dex.config: |
+    connectors:
+      - type: oidc
+        id: authentik
+        name: Authentik
+        config:
+          issuer: https://auth.k8s.vicio.ovh/application/o/argo-cd/
+          clientID: IrkjHsniW9xKNWAx9QGViY4EcGiLV9cp00i4prEf
+          clientSecret: $oidc.authentik.clientSecret
+          insecureEnableGroups: true
+          scopes:
+            - openid
+            - profile
+            - email
+            - groups
