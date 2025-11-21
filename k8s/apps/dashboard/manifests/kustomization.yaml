@@ -8,3 +8,4 @@ resources:
   - ingress.yaml
   - serviceaccount.yaml
   - rbac.yaml
+  - authentik-forwardauth.yaml

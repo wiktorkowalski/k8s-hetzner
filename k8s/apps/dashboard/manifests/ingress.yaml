@@ -15,6 +15,7 @@ spec:
           scheme: https
           serversTransport: dashboard-transport
       middlewares:
+        - name: authentik-forwardauth
         - name: dashboard-insecure
   tls:
     secretName: dashboard-tls
