@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: headlamp
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/headlamp-k8s/headlamp.git
+    targetRevision: v0.27.0
+    path: charts/headlamp
+    helm:
+      releaseName: headlamp
+      values: |
+        config:
+          baseURL: ""
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+        service:
+          type: ClusterIP
+          port: 80
+
+        ingress:
+          enabled: false
+
+        serviceAccount:
+          create: true
+          name: headlamp
+
+        clusterRoleBinding:
+          create: true
+
+        replicaCount: 1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: headlamp
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
