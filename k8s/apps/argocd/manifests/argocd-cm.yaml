@@ -14,7 +14,7 @@ data:
         id: authentik
         name: Authentik
         config:
-          issuer: https://auth.k8s.vicio.ovh/application/o/argo-cd/
+          issuer: https://auth.k8s.vicio.ovh/application/o/argocd/
           clientID: IrkjHsniW9xKNWAx9QGViY4EcGiLV9cp00i4prEf
           clientSecret: $oidc.authentik.clientSecret
           insecureEnableGroups: true
