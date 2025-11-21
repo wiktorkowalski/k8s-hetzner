@@ -11,7 +11,7 @@ data:
   oidc.config: |
     name: Authentik
     issuer: https://auth.k8s.vicio.ovh/application/o/argocd/
-    clientID: <SET_IN_AUTHENTIK_UI>
+    clientID: IrkjHsniW9xKNWAx9QGViY4EcGiLV9cp00i4prEf
     clientSecret: $oidc.authentik.clientSecret
     requestedScopes:
       - openid
