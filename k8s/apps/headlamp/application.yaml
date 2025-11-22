@@ -13,7 +13,12 @@ spec:
       releaseName: headlamp
       values: |
         config:
-          baseURL: ""
+          baseURL: "https://headlamp.k8s.vicio.ovh"
+          oidc:
+            secret:
+              create: false
+              name: headlamp-oidc
+            scopes: "openid profile email groups"
 
         resources:
           requests:
