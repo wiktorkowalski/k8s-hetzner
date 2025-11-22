@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/headlamp-k8s/headlamp.git
-    targetRevision: v0.27.0
-    path: charts/headlamp
+    repoURL: https://kubernetes-sigs.github.io/headlamp/
+    targetRevision: 0.38.0
+    chart: headlamp
     helm:
       releaseName: headlamp
       values: |
@@ -21,6 +21,16 @@ spec:
               enabled: true
               name: headlamp-oidc
             scopes: "openid profile email groups"
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
 
         resources:
           requests:
