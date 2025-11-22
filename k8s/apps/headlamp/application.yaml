@@ -21,6 +21,8 @@ spec:
               enabled: true
               name: headlamp-oidc
             scopes: "openid profile email groups"
+          extraArgs:
+            - "-oidc-callback-url=https://headlamp.k8s.vicio.ovh/oidc-callback"
 
         resources:
           requests:
