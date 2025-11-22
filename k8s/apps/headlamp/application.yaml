@@ -13,12 +13,7 @@ spec:
       releaseName: headlamp
       values: |
         config:
-          baseURL: "https://headlamp.k8s.vicio.ovh"
-          oidc:
-            clientID: "ret3n8Krk6LLg8QTm6WjUxY1oxQ7G4KD9kw1JeCC"
-            clientSecret: "h0PmhqJzAbV86BxmibOK9qoSyEAdghoMteM4r5dYyDi4kFr9krCLhNSdsM9igQrj8T5AfLT6rFAo13KVPEoxbMMGtfqzN2yye16hbqgWRmLpyYsrZXAR0PyaIkWkMZLA"
-            issuerURL: "https://auth.k8s.vicio.ovh/application/o/headlamp/"
-            scopes: "openid,profile,email,groups"
+          baseURL: ""
 
         resources:
           requests:
