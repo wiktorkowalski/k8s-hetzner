@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: k6-operator
+  namespace: testing
+  labels:
+    app.kubernetes.io/name: k6-operator
+    app.kubernetes.io/component: testing
+spec:
+  selector:
+    matchLabels:
+      control-plane: k6-operator
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - testing

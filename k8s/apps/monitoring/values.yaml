@@ -37,6 +37,14 @@ prometheus:
             drop:
               - ALL
 
+    # Remote write to Mimir for long-term storage
+    remoteWrite:
+      - url: http://mimir-gateway.monitoring.svc.cluster.local/api/v1/push
+        queueConfig:
+          capacity: 10000
+          maxShards: 50
+          minShards: 1
+
 # Alertmanager configuration
 alertmanager:
   alertmanagerSpec:
@@ -64,18 +72,48 @@ alertmanager:
       seccompProfile:
         type: RuntimeDefault
 
+  # Alertmanager configuration for OnCall integration
+  config:
+    route:
+      receiver: 'oncall'
+      routes:
+        - match:
+            severity: critical
+          receiver: 'oncall'
+    receivers:
+      - name: 'oncall'
+        webhook_configs:
+          - url: 'http://oncall.oncall.svc.cluster.local:8080/api/v1/webhooks/alertmanager/'
+            send_resolved: true
+
 # Grafana configuration
 grafana:
   enabled: true
-  # SECURITY: Load from SealedSecret (see manifests/sealed-secret.yaml.example)
-  # After creating SealedSecret, use:
-  # admin:
-  #   existingSecret: grafana-admin
-  #   userKey: admin-user
-  #   passwordKey: admin-password
 
-  # Temporary placeholder - REPLACE BEFORE PRODUCTION
-  adminPassword: "TEMP-REPLACE-ME-WITH-SEALEDSECRET"
+  # OIDC authentication via Authentik
+  envFromSecret: grafana-oidc
+
+  grafana.ini:
+    server:
+      root_url: https://grafana.k8s.vicio.ovh
+
+    auth:
+      disable_login_form: true
+      oauth_auto_login: true
+
+    auth.generic_oauth:
+      enabled: true
+      name: Authentik
+      client_id: $__env{OIDC_CLIENT_ID}
+      client_secret: $__env{OIDC_CLIENT_SECRET}
+      scopes: openid profile email groups
+      auth_url: https://auth.k8s.vicio.ovh/application/o/grafana/authorize/
+      token_url: https://auth.k8s.vicio.ovh/application/o/grafana/token/
+      api_url: https://auth.k8s.vicio.ovh/application/o/grafana/userinfo/
+      use_pkce: true
+      use_refresh_token: true
+      role_attribute_path: contains(groups, 'grafana-admins') && 'Admin' || contains(groups, 'grafana-editors') && 'Editor' || 'Viewer'
+      allow_sign_up: true
 
   persistence:
     enabled: true
@@ -114,6 +152,11 @@ grafana:
       type: tempo
       url: http://tempo.tracing.svc.cluster.local:3100
       access: proxy
+    - name: Mimir
+      type: prometheus
+      url: http://mimir-gateway.monitoring.svc.cluster.local/prometheus
+      access: proxy
+      isDefault: false
 
   # Pre-installed dashboards
   dashboardProviders:

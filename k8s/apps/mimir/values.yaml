@@ -1,0 +1,50 @@
+mimir:
+  structuredConfig:
+    multitenancy_enabled: false
+    blocks_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/blocks
+
+mimir-distributed:
+  mode: monolithic
+
+monolithic:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  persistence:
+    enabled: true
+    storageClass: longhorn
+    size: 20Gi
+
+distributor:
+  replicas: 0
+ingester:
+  replicas: 0
+querier:
+  replicas: 0
+query-frontend:
+  replicas: 0
+compactor:
+  replicas: 0
+store-gateway:
+  replicas: 0
+ruler:
+  replicas: 0
+alertmanager:
+  replicas: 0
+
+gateway:
+  enabled: true
+  replicas: 1
+
+serviceMonitor:
+  enabled: true
+  labels:
+    release: kube-prometheus-stack

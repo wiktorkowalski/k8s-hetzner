@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: alloy
+  namespace: telemetry
+  labels:
+    app.kubernetes.io/name: alloy
+    app.kubernetes.io/component: telemetry
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alloy
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - telemetry
