@@ -3,50 +3,16 @@ kind: Application
 metadata:
   name: headlamp
   namespace: argocd
+  labels:
+    app.kubernetes.io/name: headlamp
+    app.kubernetes.io/component: dashboard
+    app.kubernetes.io/part-of: k8s-hetzner
 spec:
   project: default
   source:
-    repoURL: https://kubernetes-sigs.github.io/headlamp/
-    targetRevision: 0.38.0
-    chart: headlamp
-    helm:
-      releaseName: headlamp
-      values: |
-        config:
-          baseURL: ""
-          oidc:
-            secret:
-              create: false
-            externalSecret:
-              enabled: true
-              name: headlamp-oidc
-            scopes: "openid profile email groups"
-          extraArgs:
-            - "-oidc-callback-url=https://headlamp.k8s.vicio.ovh/oidc-callback"
-
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 200m
-            memory: 256Mi
-
-        service:
-          type: ClusterIP
-          port: 80
-
-        ingress:
-          enabled: false
-
-        serviceAccount:
-          create: true
-          name: headlamp
-
-        clusterRoleBinding:
-          create: true
-
-        replicaCount: 1
+    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
+    targetRevision: master
+    path: k8s/apps/headlamp
   destination:
     server: https://kubernetes.default.svc
     namespace: headlamp
