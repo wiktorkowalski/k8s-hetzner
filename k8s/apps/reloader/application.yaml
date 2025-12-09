@@ -12,23 +12,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://stakater.github.io/stakater-charts
-    chart: reloader
-    targetRevision: 1.2.1
-    helm:
-      releaseName: reloader
-      values: |
-        reloader:
-          watchGlobally: true
-          ignoreSecrets: false
-          ignoreConfigMaps: false
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            cpu: 100m
-            memory: 128Mi
+    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
+    targetRevision: master
+    path: k8s/apps/reloader
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

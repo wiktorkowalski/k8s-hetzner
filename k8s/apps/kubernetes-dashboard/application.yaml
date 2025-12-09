@@ -1,23 +1,23 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: sealed-secrets
+  name: kubernetes-dashboard
   namespace: argocd
   labels:
-    app.kubernetes.io/name: sealed-secrets
-    app.kubernetes.io/component: security
+    app.kubernetes.io/name: kubernetes-dashboard
+    app.kubernetes.io/component: dashboard
     app.kubernetes.io/part-of: k8s-hetzner
   annotations:
-    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
   source:
     repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
     targetRevision: master
-    path: k8s/apps/sealed-secrets
+    path: k8s/apps/kubernetes-dashboard
   destination:
     server: https://kubernetes.default.svc
-    namespace: kube-system
+    namespace: kubernetes-dashboard
   syncPolicy:
     automated:
       prune: true
