@@ -51,7 +51,7 @@ module "kube-hetzner" {
   agent_nodepools = [
     {
       name        = "agent-small-fsn1"
-      server_type = "cx33" # 4 vCPU, 8GB RAM, x86
+      server_type = "cx43" # 8 vCPU, 16GB RAM, x86
       location    = "fsn1"
       labels      = []
       taints      = []
@@ -59,7 +59,7 @@ module "kube-hetzner" {
     },
     {
       name        = "agent-small-nbg1"
-      server_type = "cx33"
+      server_type = "cx43" # 8 vCPU, 16GB RAM, x86
       location    = "nbg1"
       labels      = []
       taints      = []
@@ -74,24 +74,8 @@ module "kube-hetzner" {
   # CNI Plugin (Cilium is recommended for production)
   cni_plugin = "cilium"
 
-  # Enable Cluster Autoscaler
+  # Disable Klipper MetalLB (using Hetzner LB instead)
   enable_klipper_metal_lb = false
-  autoscaler_nodepools = [
-    {
-      name        = "autoscaler-fsn1"
-      server_type = "cx33"
-      location    = "fsn1"
-      min_nodes   = 0
-      max_nodes   = 5
-    },
-    {
-      name        = "autoscaler-nbg1"
-      server_type = "cx33"
-      location    = "nbg1"
-      min_nodes   = 0
-      max_nodes   = 5
-    }
-  ]
 
   # Storage Configuration
   enable_longhorn = true
