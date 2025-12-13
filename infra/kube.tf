@@ -47,10 +47,10 @@ module "kube-hetzner" {
     }
   ]
 
-  # Agent Nodes (Workers) - both in hel1 due to cx43 availability
+  # Agent Nodes (Workers)
   agent_nodepools = [
     {
-      name        = "agent-hel1-1"
+      name        = "agent-small-hel1"
       server_type = "cx43" # 8 vCPU, 16GB RAM, x86
       location    = "hel1"
       labels      = []
@@ -58,9 +58,9 @@ module "kube-hetzner" {
       count       = 1
     },
     {
-      name        = "agent-hel1-2"
+      name        = "agent-small-nbg1"
       server_type = "cx43" # 8 vCPU, 16GB RAM, x86
-      location    = "hel1"
+      location    = "nbg1"
       labels      = []
       taints      = []
       count       = 1
