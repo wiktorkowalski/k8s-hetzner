@@ -50,9 +50,9 @@ module "kube-hetzner" {
   # Agent Nodes (Workers)
   agent_nodepools = [
     {
-      name        = "agent-small-fsn1"
+      name        = "agent-small-hel1"
       server_type = "cx43" # 8 vCPU, 16GB RAM, x86
-      location    = "fsn1"
+      location    = "hel1"
       labels      = []
       taints      = []
       count       = 1
