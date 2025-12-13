@@ -12,9 +12,20 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
-    targetRevision: master
-    path: k8s/apps/redis-operator
+    repoURL: https://ot-container-kit.github.io/helm-charts
+    chart: redis-operator
+    targetRevision: 0.22.2
+    helm:
+      releaseName: redis-operator
+      values: |
+        redisOperator:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: redis-operator-system
@@ -25,6 +36,7 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true
     retry:
       limit: 5
       backoff:

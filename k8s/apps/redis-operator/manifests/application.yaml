@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: redis-operator-manifests
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: redis-operator-manifests
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: k8s-hetzner
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
+    targetRevision: master
+    path: k8s/apps/redis-operator/manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: redis-operator-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
