@@ -75,7 +75,7 @@ jobs:
         id: kubeconform
         run: |
           echo "Running kubeconform on all manifests..."
-          find k8s/ -type f \( -name "*.yaml" -o -name "*.yml" \) | \
+          find k8s/ -type f \( -name "*.yaml" -o -name "*.yml" \) ! -name "values.yaml" | \
             xargs kubeconform -strict -ignore-missing-schemas -summary 2>&1 | tee kubeconform.txt || true
 
           # Check for actual invalid resources or errors (not zero counts)
