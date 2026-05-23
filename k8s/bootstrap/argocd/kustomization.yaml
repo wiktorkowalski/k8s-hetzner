@@ -5,10 +5,9 @@ namespace: argocd
 
 resources:
   - namespace.yaml
-  # Official ArgoCD installation
-  - https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.2/manifests/install.yaml
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.2/manifests/install.yaml
+
 patches:
-  # Patch ArgoCD to run in insecure mode (TLS terminated at Traefik)
   - target:
       kind: ConfigMap
       name: argocd-cmd-params-cm

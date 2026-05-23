@@ -1,106 +1,101 @@
 module "kube-hetzner" {
   source  = "kube-hetzner/kube-hetzner/hcloud"
-  version = "2.18.4"
+  version = "2.19.3"
 
-  # Hetzner token from environment variable
   hcloud_token = var.hcloud_token
 
   providers = {
     hcloud = hcloud
   }
 
-  # SSH Configuration
   ssh_public_key  = var.ssh_public_key
   ssh_private_key = var.ssh_private_key
 
-  # Network Configuration
   network_region = var.network_region
+  cluster_name   = var.cluster_name
 
-  # Cluster Configuration
-  cluster_name = var.cluster_name
+  # Pin k3s minor channel so module defaults don't drift
+  initial_k3s_channel = "v1.32"
 
-  # Control Plane Nodes (3 for HA)
+  # 3 cx33 nodes — one per DC. Each acts as BOTH control plane and worker.
+  # cx33: 4 vCPU / 8 GB / 80 GB disk. cx43 currently out-of-stock; will scale up agents when it returns.
   control_plane_nodepools = [
     {
-      name        = "control-plane-fsn1"
-      server_type = "cx23" # 2 vCPU, 4GB RAM, x86
+      name        = "cp-fsn1"
+      server_type = "cx33"
       location    = "fsn1"
       labels      = []
       taints      = []
       count       = 1
     },
     {
-      name        = "control-plane-nbg1"
-      server_type = "cx23"
+      name        = "cp-nbg1"
+      server_type = "cx33"
       location    = "nbg1"
       labels      = []
       taints      = []
       count       = 1
     },
     {
-      name        = "control-plane-hel1"
-      server_type = "cx23"
-      location    = "hel1"
-      labels      = []
-      taints      = []
-      count       = 1
-    }
-  ]
-
-  # Agent Nodes (Workers)
-  agent_nodepools = [
-    {
-      name        = "agent-small-hel1"
-      server_type = "cx43" # 8 vCPU, 16GB RAM, x86
+      name        = "cp-hel1"
+      server_type = "cx33"
       location    = "hel1"
       labels      = []
       taints      = []
       count       = 1
     },
-    {
-      name        = "agent-small-nbg1"
-      server_type = "cx43" # 8 vCPU, 16GB RAM, x86
-      location    = "nbg1"
-      labels      = []
-      taints      = []
-      count       = 1
-    }
   ]
 
-  # Load Balancer Configuration
+  # No dedicated agent nodes for MVP; control planes carry workloads. Add agents when cx43 stock returns.
+  agent_nodepools = []
+
+  # Combine CP+worker on the same nodes
+  allow_scheduling_on_control_plane = true
+
   load_balancer_type     = "lb11"
   load_balancer_location = "fsn1"
 
-  # CNI Plugin (Cilium is recommended for production)
-  cni_plugin = "cilium"
-
-  # Disable Klipper MetalLB (using Hetzner LB instead)
+  cni_plugin              = "cilium"
   enable_klipper_metal_lb = false
 
-  # Storage Configuration
-  enable_longhorn = true
+  # Enable Hubble (cilium flow visibility + UI) on top of module defaults
+  cilium_merge_values = <<-EOT
+    hubble:
+      enabled: true
+      relay:
+        enabled: true
+      ui:
+        enabled: true
+  EOT
 
-  # Disable Hetzner CSI to avoid conflicts with Longhorn
+  enable_longhorn     = true
   disable_hetzner_csi = true
 
-  # Note: Traefik is installed by default in kube-hetzner
-  # We'll manage additional ingress configuration via ArgoCD in k8s/ directory
+  enable_cert_manager   = true
+  enable_metrics_server = true
+  enable_rancher        = false
 
-  # Enable Cert-Manager for TLS
-  enable_cert_manager = true
-
-  # Rancher (optional, set to false if not needed)
-  enable_rancher = false
-
-  # Additional Options
   automatically_upgrade_k3s = true
   automatically_upgrade_os  = true
 
-  # Restrict API server access (optional - remove or modify for your IP)
-  # restrict_outbound_traffic = false
+  # Lock down SSH (22) and Kubernetes API (6443) to management CIDRs only.
+  # Update var.management_cidrs from TF Cloud workspace vars if your IP changes.
+  firewall_ssh_source      = var.management_cidrs
+  firewall_kube_api_source = var.management_cidrs
 
-  # Firewall configuration
-  # extra_firewall_rules = []
+  # Traefik: enable JSON access logs. Dashboard is NOT exposed via Ingress yet — wait for Authentik so it's behind auth.
+  traefik_merge_values = <<-EOT
+    logs:
+      access:
+        enabled: true
+        format: json
+  EOT
 
-  enable_metrics_server = true
+  # Bootstrap ArgoCD as part of cluster install. After this runs, ArgoCD owns the rest via the root-app
+  # which watches k8s/apps in this repo and auto-syncs.
+  extra_kustomize_deployment_commands = <<-EOT
+    kubectl apply -k https://github.com/wiktorkowalski/k8s-hetzner.git//k8s/bootstrap/argocd?ref=master
+    kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
+    kubectl apply -f https://raw.githubusercontent.com/wiktorkowalski/k8s-hetzner/master/k8s/root-app/root-application.yaml
+  EOT
 }

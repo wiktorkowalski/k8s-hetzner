@@ -3,15 +3,11 @@ terraform {
   required_providers {
     hcloud = {
       source  = "hetznercloud/hcloud"
-      version = "1.54.0"
+      version = "~> 1.63"
     }
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.12.0"
-    }
-    github = {
-      source  = "integrations/github"
-      version = "6.4.0"
+      version = "~> 5.19"
     }
   }
 }
@@ -22,8 +18,4 @@ provider "hcloud" {
 
 provider "cloudflare" {
   api_token = var.cloudflare_api_token
-}
-
-provider "github" {
-  # Anonymous access - required by kube-hetzner module
 }
