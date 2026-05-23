@@ -78,9 +78,10 @@ module "kube-hetzner" {
   automatically_upgrade_k3s = true
   automatically_upgrade_os  = true
 
-  # Lock down SSH (22) and Kubernetes API (6443) to management CIDRs only.
-  # Update var.management_cidrs from TF Cloud workspace vars if your IP changes.
-  firewall_ssh_source      = var.management_cidrs
+  # Lock down the Kubernetes API (6443) to management CIDRs only.
+  # SSH stays open (module default 0.0.0.0/0) because the module's remote-exec provisioner needs
+  # to reach the VMs from wherever terraform runs (TF Cloud workers / GH runners). SSH itself uses
+  # ed25519 key-only auth (no passwords) so brute force is impractical.
   firewall_kube_api_source = var.management_cidrs
 
   # Traefik: enable JSON access logs. Dashboard is NOT exposed via Ingress yet — wait for Authentik so it's behind auth.
