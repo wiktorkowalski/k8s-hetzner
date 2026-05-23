@@ -17,9 +17,12 @@ module "kube-hetzner" {
   # Pin k3s minor channel so module defaults don't drift
   initial_k3s_channel = "v1.32"
 
-  # 3 cx33 nodes — one per DC. Each acts as BOTH control plane and worker.
-  # cx33: 4 vCPU / 8 GB / 80 GB disk. cx43 currently out-of-stock; will scale up agents when it returns.
+  # Blue/green control-plane swap in progress: the cx33 nodepools are the existing CPs (created
+  # 2026-05-23 during the fresh-start bootstrap). The cx23 nodepools are the new dedicated CPs.
+  # Both run together for one apply; in a follow-up PR we'll remove the cx33 entries so only the
+  # cx23 CPs remain (etcd transitions 3 -> 6 -> 3 cleanly).
   control_plane_nodepools = [
+    # Existing — will be removed in next PR
     {
       name        = "cp-fsn1"
       server_type = "cx33"
@@ -44,10 +47,45 @@ module "kube-hetzner" {
       taints      = []
       count       = 1
     },
+    # New dedicated CPs (cx23 — 2 vCPU / 4 GB) — sufficient for CP-only duty when we add proper workers
+    {
+      name        = "cp-fsn1-v2"
+      server_type = "cx23"
+      location    = "fsn1"
+      labels      = []
+      taints      = []
+      count       = 1
+    },
+    {
+      name        = "cp-nbg1-v2"
+      server_type = "cx23"
+      location    = "nbg1"
+      labels      = []
+      taints      = []
+      count       = 1
+    },
+    {
+      name        = "cp-hel1-v2"
+      server_type = "cx23"
+      location    = "hel1"
+      labels      = []
+      taints      = []
+      count       = 1
+    },
   ]
 
-  # No dedicated agent nodes for MVP; control planes carry workloads. Add agents when cx43 stock returns.
-  agent_nodepools = []
+  # First real worker. cx43: 8 vCPU / 16 GB / 160 GB disk. Only nbg1/hel1 in stock right now;
+  # fsn1 cx43 was OUT at 2026-05-23T15.
+  agent_nodepools = [
+    {
+      name        = "agent-nbg1"
+      server_type = "cx43"
+      location    = "nbg1"
+      labels      = []
+      taints      = []
+      count       = 1
+    },
+  ]
 
   # Combine CP+worker on the same nodes
   allow_scheduling_on_control_plane = true
@@ -95,12 +133,16 @@ module "kube-hetzner" {
         format: json
   EOT
 
-  # Bootstrap ArgoCD as part of cluster install. After this runs, ArgoCD owns the rest via the root-app
-  # which watches k8s/apps in this repo and auto-syncs.
+  # Bootstrap ArgoCD as part of cluster install. After this runs, ArgoCD owns the rest via the
+  # root-app which watches k8s/apps in this repo and auto-syncs.
+  # NB: --server-side is required because ArgoCD v3's CRDs (especially applicationsets) exceed
+  # kubectl's 256KB client-side annotation limit. The module's `kubectl apply -k` of the
+  # extra-manifests/ kustomization is client-side, which is why that kustomization only creates
+  # the argocd namespace — the heavy lifting is here with --server-side.
   extra_kustomize_deployment_commands = <<-EOT
-    kubectl apply -k https://github.com/wiktorkowalski/k8s-hetzner.git//k8s/bootstrap/argocd?ref=master
+    kubectl apply -k https://github.com/wiktorkowalski/k8s-hetzner.git//k8s/bootstrap/argocd?ref=master --server-side --force-conflicts
     kubectl wait --for=condition=established --timeout=120s crd/applications.argoproj.io
     kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
-    kubectl apply -f https://raw.githubusercontent.com/wiktorkowalski/k8s-hetzner/master/k8s/root-app/root-application.yaml
+    kubectl apply -f https://raw.githubusercontent.com/wiktorkowalski/k8s-hetzner/master/k8s/root-app/root-application.yaml --server-side --force-conflicts
   EOT
 }
