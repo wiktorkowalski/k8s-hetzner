@@ -74,13 +74,14 @@ module "kube-hetzner" {
     },
   ]
 
-  # First real worker. cx43: 8 vCPU / 16 GB / 160 GB disk. Only nbg1/hel1 in stock right now;
-  # fsn1 cx43 was OUT at 2026-05-23T15.
+  # First real worker. cx43: 8 vCPU / 16 GB / 160 GB disk.
+  # Stock as of 2026-05-23T16: fsn1 OUT, nbg1 OUT (was IN earlier but went OUT mid-apply),
+  # hel1 IN. Moving from nbg1 to hel1.
   agent_nodepools = [
     {
-      name        = "agent-nbg1"
+      name        = "agent-hel1"
       server_type = "cx43"
-      location    = "nbg1"
+      location    = "hel1"
       labels      = []
       taints      = []
       count       = 1
