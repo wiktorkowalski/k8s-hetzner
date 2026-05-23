@@ -11,11 +11,16 @@ The k3s deployment running on the Hetzner VMs. Freshly rebuilt
 
 ## VM
 
-A Hetzner Cloud server. Currently `cx33` (4 vCPU / 8 GB / 80 GB) in
-each of `fsn1`, `nbg1`, `hel1`. Each VM acts as **both control plane
-and worker** (`allow_scheduling_on_control_plane = true`). The cluster
-has no dedicated agent nodepool yet; one or two will be added once
-`cx43` is reliably back in Hetzner stock.
+A Hetzner Cloud server. Current topology:
+
+- **3× cx23** control planes (2 vCPU / 4 GB / 40 GB) — one each in
+  `fsn1`, `nbg1`, `hel1`. CP-only; workloads stay off them by
+  scheduler preference (CPs are small) even though
+  `allow_scheduling_on_control_plane = true` is set as a fallback.
+- **3× cx43** agents (8 vCPU / 16 GB / 160 GB) — one each in `fsn1`,
+  `nbg1`, `hel1`. Workload HA per-DC: any single DC can go dark
+  without taking workloads down. Longhorn 3-replica spreads one
+  replica per DC.
 
 ## Reset
 
@@ -43,10 +48,9 @@ IP when not destroyed). DNS records `k8s.<domain>` and
 
 ## Management CIDRs
 
-`var.management_cidrs` is the allow-list for SSH (22) and the
-Kubernetes API server (6443). Both are firewalled at Hetzner-level
-to these CIDRs only. Update the variable when the operator's public
-IP changes.
+`var.management_cidrs` is the allow-list for the Kubernetes API server
+(6443) only. **SSH (22) is intentionally NOT locked** to these CIDRs
+— see [[Gotchas]] for why.
 
 ## MVP cluster
 
@@ -60,7 +64,8 @@ in subsequent PRs.
 
 `k8s/root-app/root-application.yaml` is the ArgoCD `Application` that
 watches `k8s/apps/` and creates child Applications for everything in
-there. App-of-apps pattern.
+there. App-of-apps pattern. **Requires `directory.recurse: true`** —
+see [[Gotchas]].
 
 ## Sealed key
 
@@ -68,3 +73,80 @@ The asymmetric key pair held by the sealed-secrets controller. A fresh
 [[Cluster]] generates a new private key on first install, so any
 SealedSecret manifests committed against a previous cluster cannot be
 decrypted until re-sealed with the new public cert.
+
+## Gotchas
+
+Hard-won findings from the 2026-05-23 rebuild. Worth keeping a feel
+for, especially before another cluster reset.
+
+### `firewall_ssh_source` lockdown breaks TF Cloud apply
+
+The `kube-hetzner` module installs k3s via `provisioner "remote-exec"`
+from wherever Terraform runs. TF Cloud's workers run on arbitrary AWS
+IPs — locking SSH (port 22) to a fixed CIDR via `firewall_ssh_source`
+will firewall those workers out and the apply hangs/fails at the k3s
+install step. **Lock `firewall_kube_api_source` (6443) only**; SSH
+key-only auth is the safety net for port 22.
+
+### `extra_kustomize_deployment_commands` is silently gated
+
+The module's `terraform_data.kustomization_user_deploy` only runs when
+`infra/extra-manifests/` contains at least one `.yaml.tpl` file
+(`count = length(local.user_kustomization_templates) > 0 ? 1 : 0`).
+Without that directory the entire `extra_kustomize_deployment_commands`
+block is silently skipped — no warning, no error. For ArgoCD
+auto-bootstrap to fire on fresh apply, `infra/extra-manifests/` must
+exist with at minimum a `kustomization.yaml.tpl` referencing one
+resource.
+
+### ArgoCD v3 CRDs exceed kubectl's client-side annotation limit
+
+`kubectl apply` (client-side) stores a copy of the manifest in the
+`kubectl.kubernetes.io/last-applied-configuration` annotation. ArgoCD
+v3's `applicationsets.argoproj.io` CRD exceeds the 256 KB annotation
+limit. Any `kubectl apply -k` of the ArgoCD bootstrap manifest fails
+mid-way with `metadata.annotations: Too long`. Always pass
+`--server-side --force-conflicts` for ArgoCD applies — including in
+`extra_kustomize_deployment_commands`. The module's own
+`kubectl apply -k /var/user_kustomize/` is client-side, so the
+`extra-manifests` kustomization must stay small (namespace-only) and
+the heavy ArgoCD install runs from the deployment-commands hook with
+`--server-side`.
+
+### Root app needs `directory.recurse: true`
+
+ArgoCD's Directory source is non-recursive by default. With
+`path: k8s/apps`, it reads only YAMLs at the top level of `k8s/apps/`
+— `k8s/apps/<name>/application.yaml` files in subfolders are
+**silently ignored**. Root-app reports Synced+Healthy with zero
+managed resources. Fix: add `spec.source.directory.recurse: true`.
+
+### Removing the original "first" control plane breaks bootstrap state
+
+`kube-hetzner` tracks a `first_control_plane_node_id` in TF state
+(referenced by `terraform_data.kustomization` and `agent_config`
+provisioners). When that exact CP VM is destroyed (e.g., by removing
+its nodepool entry or via `terraform_apply -replace`), subsequent
+remote-execs in the same or later applies fail because they try to
+SSH to the now-dead IP — even though the cluster's etcd has a leader
+elsewhere. **Symptoms**: `dial tcp <dead-ip>:22: connection refused`
+or apply hangs on `Waiting for the cluster to become ready...` until
+its 6m timeout. Worse: destroying multiple CPs in parallel (as a
+single `terraform apply` does for symmetric nodepool reductions) loses
+etcd quorum before the cluster can gracefully reconcile member
+removal, leaving the API server returning `ServiceUnavailable`. **A
+blue/green CP swap is not safe via `terraform apply` alone** — the
+recovery path is a full destroy+recreate (or, if VMs must be
+preserved, manual etcd member surgery and state mv).
+
+### kube-hetzner indexes subnets by `count.index`
+
+`hcloud_network_subnet.control_plane` uses `count = length(var.control_plane_nodepools)`
+and computes `ip_range = local.network_ipv4_subnets[var.subnet_amount - 1 - count.index]`.
+Removing entries from `control_plane_nodepools` (or `agent_nodepools`)
+shifts every later entry's `count.index` down, which means every
+remaining subnet wants a *different* IP range — forcing all the
+later VMs to be replaced because their `network` block changes. The
+**`count = 0` trick** keeps list positions stable: entries stay in
+place, only the VM-creating `for_each` over `local.control_plane_nodes`
+loses keys.
