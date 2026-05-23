@@ -1,20 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: argocd-config
+  name: argocd
   namespace: argocd
-  labels:
-    app.kubernetes.io/name: argocd-config
-    app.kubernetes.io/component: gitops
-    app.kubernetes.io/part-of: k8s-hetzner
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
     targetRevision: master
-    path: k8s/apps/argocd/manifests
+    path: k8s/bootstrap/argocd
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -24,9 +22,11 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
     retry:
       limit: 5
       backoff:
-        duration: 5s
+        duration: 10s
         factor: 2
-        maxDuration: 3m
+        maxDuration: 5m

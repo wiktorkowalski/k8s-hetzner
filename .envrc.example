@@ -1,23 +1,25 @@
-# Hetzner Cloud API Token
-# Get this from: https://console.hetzner.cloud/ -> Security -> API Tokens
-# Create a Read & Write token
-export HCLOUD_TOKEN="your-hetzner-api-token-here"
+# Local override file for direnv. Copy to .envrc and edit.
+# In CI, all of these are set as TF Cloud workspace variables instead — this file is only for local
+# terraform CLI use (e.g., emergency destroy).
 
-# Cloudflare API Token
-# Get this from: https://dash.cloudflare.com/profile/api-tokens
-# Create a token with: Zone.DNS (Edit) permissions
-export CLOUDFLARE_API_TOKEN="your-cloudflare-api-token-here"
+# Hetzner Cloud API Token (Read & Write). https://console.hetzner.cloud/ → Security → API Tokens
+export HCLOUD_TOKEN="hcloud-token"
 
-# Cloudflare Zone ID
-# Get this from: https://dash.cloudflare.com/ -> Select your domain -> Overview (right sidebar)
-export TF_VAR_cloudflare_zone_id="your-cloudflare-zone-id-here"
+# Cloudflare API Token with Zone.DNS edit permissions. https://dash.cloudflare.com/profile/api-tokens
+export CLOUDFLARE_API_TOKEN="cf-token"
 
-# Domain name
-export TF_VAR_domain="example.com"
+# Cloudflare zone ID for the domain
+export TF_VAR_cloudflare_zone_id="cf-zone-id"
 
-# Optional: Override default values
+# Your domain
+export TF_VAR_domain="vicio.ovh"
+
+# SSH key contents (NOT paths). Used by the module to provision the nodes.
+export TF_VAR_ssh_public_key="$(cat ~/.ssh/id_ed25519.pub)"
+export TF_VAR_ssh_private_key="$(cat ~/.ssh/id_ed25519)"
+
+# Optional overrides
 # export TF_VAR_cluster_subdomain="k8s"
-# export TF_VAR_cluster_name="k8s-hetzner-prod"
+# export TF_VAR_cluster_name="k8s-hetzner"
 # export TF_VAR_network_region="eu-central"
-# export TF_VAR_ssh_public_key_path="~/.ssh/id_ed25519.pub"
-# export TF_VAR_ssh_private_key_path="~/.ssh/id_ed25519"
+# export TF_VAR_management_cidrs='["185.14.151.136/32"]'

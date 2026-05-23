@@ -3,18 +3,29 @@ kind: Application
 metadata:
   name: sealed-secrets
   namespace: argocd
-  labels:
-    app.kubernetes.io/name: sealed-secrets
-    app.kubernetes.io/component: security
-    app.kubernetes.io/part-of: k8s-hetzner
   annotations:
     argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
-    targetRevision: master
-    path: k8s/apps/sealed-secrets
+    repoURL: https://bitnami-labs.github.io/sealed-secrets
+    chart: sealed-secrets
+    targetRevision: 2.18.6
+    helm:
+      releaseName: sealed-secrets
+      valuesObject:
+        fullnameOverride: sealed-secrets-controller
+        metrics:
+          serviceMonitor:
+            enabled: false
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
@@ -23,10 +34,10 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true
+      - CreateNamespace=false
     retry:
       limit: 5
       backoff:
-        duration: 5s
+        duration: 10s
         factor: 2
         maxDuration: 3m
