@@ -58,7 +58,10 @@ module "kube-hetzner" {
   cni_plugin              = "cilium"
   enable_klipper_metal_lb = false
 
-  # Enable Hubble (cilium flow visibility + UI) on top of module defaults
+  # Enable Hubble (cilium flow visibility + UI) on top of module defaults.
+  # Hubble UI service is ClusterIP only — reach it with
+  #   kubectl -n kube-system port-forward svc/hubble-ui 12000:80
+  # We'll put it behind Authentik once that's installed (follow-up PR).
   cilium_merge_values = <<-EOT
     hubble:
       enabled: true
@@ -78,9 +81,10 @@ module "kube-hetzner" {
   automatically_upgrade_k3s = true
   automatically_upgrade_os  = true
 
-  # Lock down SSH (22) and Kubernetes API (6443) to management CIDRs only.
-  # Update var.management_cidrs from TF Cloud workspace vars if your IP changes.
-  firewall_ssh_source      = var.management_cidrs
+  # Lock down the Kubernetes API (6443) to management CIDRs only.
+  # SSH stays open (module default 0.0.0.0/0) because the module's remote-exec provisioner needs
+  # to reach the VMs from wherever terraform runs (TF Cloud workers / GH runners). SSH itself uses
+  # ed25519 key-only auth (no passwords) so brute force is impractical.
   firewall_kube_api_source = var.management_cidrs
 
   # Traefik: enable JSON access logs. Dashboard is NOT exposed via Ingress yet — wait for Authentik so it's behind auth.
@@ -95,6 +99,7 @@ module "kube-hetzner" {
   # which watches k8s/apps in this repo and auto-syncs.
   extra_kustomize_deployment_commands = <<-EOT
     kubectl apply -k https://github.com/wiktorkowalski/k8s-hetzner.git//k8s/bootstrap/argocd?ref=master
+    kubectl wait --for=condition=established --timeout=120s crd/applications.argoproj.io
     kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
     kubectl apply -f https://raw.githubusercontent.com/wiktorkowalski/k8s-hetzner/master/k8s/root-app/root-application.yaml
   EOT
