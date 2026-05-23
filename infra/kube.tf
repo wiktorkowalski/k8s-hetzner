@@ -58,7 +58,10 @@ module "kube-hetzner" {
   cni_plugin              = "cilium"
   enable_klipper_metal_lb = false
 
-  # Enable Hubble (cilium flow visibility + UI) on top of module defaults
+  # Enable Hubble (cilium flow visibility + UI) on top of module defaults.
+  # Hubble UI service is ClusterIP only — reach it with
+  #   kubectl -n kube-system port-forward svc/hubble-ui 12000:80
+  # We'll put it behind Authentik once that's installed (follow-up PR).
   cilium_merge_values = <<-EOT
     hubble:
       enabled: true
@@ -96,6 +99,7 @@ module "kube-hetzner" {
   # which watches k8s/apps in this repo and auto-syncs.
   extra_kustomize_deployment_commands = <<-EOT
     kubectl apply -k https://github.com/wiktorkowalski/k8s-hetzner.git//k8s/bootstrap/argocd?ref=master
+    kubectl wait --for=condition=established --timeout=120s crd/applications.argoproj.io
     kubectl -n argocd rollout status deployment/argocd-server --timeout=300s
     kubectl apply -f https://raw.githubusercontent.com/wiktorkowalski/k8s-hetzner/master/k8s/root-app/root-application.yaml
   EOT
