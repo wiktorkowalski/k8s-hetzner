@@ -17,19 +17,19 @@ module "kube-hetzner" {
   # Pin k3s minor channel so module defaults don't drift
   initial_k3s_channel = "v1.32"
 
-  # Blue/green control-plane swap in progress: the cx33 nodepools are the existing CPs (created
-  # 2026-05-23 during the fresh-start bootstrap). The cx23 nodepools are the new dedicated CPs.
-  # Both run together for one apply; in a follow-up PR we'll remove the cx33 entries so only the
-  # cx23 CPs remain (etcd transitions 3 -> 6 -> 3 cleanly).
+  # 3 cx23 control planes — one per DC. The cx33 entries below are kept (count=0) so the
+  # nodepool list positions don't shuffle — that would force subnet/network resource
+  # reindexing (kube-hetzner indexes subnets via list position via count.index), which would
+  # cascade into VM private IP changes. With count=0 the cx33 VMs get destroyed but the
+  # cx23-v2 entries stay at indexes 3/4/5 where they live in state.
   control_plane_nodepools = [
-    # Existing — will be removed in next PR
     {
       name        = "cp-fsn1"
       server_type = "cx33"
       location    = "fsn1"
       labels      = []
       taints      = []
-      count       = 1
+      count       = 0
     },
     {
       name        = "cp-nbg1"
@@ -37,7 +37,7 @@ module "kube-hetzner" {
       location    = "nbg1"
       labels      = []
       taints      = []
-      count       = 1
+      count       = 0
     },
     {
       name        = "cp-hel1"
@@ -45,9 +45,8 @@ module "kube-hetzner" {
       location    = "hel1"
       labels      = []
       taints      = []
-      count       = 1
+      count       = 0
     },
-    # New dedicated CPs (cx23 — 2 vCPU / 4 GB) — sufficient for CP-only duty when we add proper workers
     {
       name        = "cp-fsn1-v2"
       server_type = "cx23"
