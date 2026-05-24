@@ -74,6 +74,34 @@ spec:
               memory: 128Mi
             limits:
               memory: 256Mi
+          additionalDataSources:
+            - name: Loki
+              type: loki
+              uid: loki
+              url: http://loki.monitoring.svc:3100
+              access: proxy
+              isDefault: false
+              jsonData:
+                derivedFields:
+                  - name: TraceID
+                    matcherRegex: '"traceID":"(\w+)"'
+                    url: "$${__value.raw}"
+                    datasourceUid: tempo
+                    urlDisplayLabel: View Trace
+            - name: Tempo
+              type: tempo
+              uid: tempo
+              url: http://tempo.monitoring.svc:3200
+              access: proxy
+              isDefault: false
+              jsonData:
+                tracesToLogsV2:
+                  datasourceUid: loki
+                  filterByTraceID: true
+                serviceMap:
+                  datasourceUid: prometheus
+                nodeGraph:
+                  enabled: true
 
         prometheusOperator:
           resources:
