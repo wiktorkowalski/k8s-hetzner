@@ -43,7 +43,7 @@ spec:
               unmatched: heuristic
             discovery:
               services:
-                - k8s_namespace: ".*"
+                - k8s_namespace: "default"
             attributes:
               kubernetes:
                 enable: true
