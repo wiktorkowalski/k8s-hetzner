@@ -26,6 +26,15 @@ spec:
           enabled: false
 
         prometheus:
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - prometheus.k8s.vicio.ovh
+            tls:
+              - secretName: wildcard-k8s-vicio-ovh-tls
+                hosts:
+                  - prometheus.k8s.vicio.ovh
           prometheusSpec:
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
@@ -45,6 +54,15 @@ spec:
                 memory: 512Mi
 
         alertmanager:
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - alertmanager.k8s.vicio.ovh
+            tls:
+              - secretName: wildcard-k8s-vicio-ovh-tls
+                hosts:
+                  - alertmanager.k8s.vicio.ovh
           alertmanagerSpec:
             storage:
               volumeClaimTemplate:
