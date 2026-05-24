@@ -1,0 +1,80 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: beyla
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: beyla
+    targetRevision: 1.16.7
+    helm:
+      releaseName: beyla
+      valuesObject:
+        # Unprivileged mode with specific eBPF capabilities
+        privileged: false
+        hostPID: true
+
+        securityContext:
+          runAsUser: 0
+          seLinuxOptions:
+            type: spc_t
+          capabilities:
+            add:
+              - BPF
+              - SYS_PTRACE
+              - NET_RAW
+              - CHECKPOINT_RESTORE
+              - DAC_READ_SEARCH
+              - PERFMON
+              - SYS_RESOURCE
+            drop:
+              - ALL
+
+        tolerations:
+          - operator: Exists
+
+        config:
+          create: true
+          data:
+            otel_traces_export:
+              endpoint: "http://tempo.monitoring.svc:4317"
+            otel_metrics_export:
+              endpoint: "http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/otlp"
+            routes:
+              unmatched: heuristic
+            discovery:
+              services:
+                - k8s_namespace: ".*"
+            attributes:
+              kubernetes:
+                enable: true
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
