@@ -1,3 +1,17 @@
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: cloudflare-api-token
+  namespace: cert-manager
+spec:
+  encryptedData:
+    api-token: AgC0eLU3HrD1i77ohA4QL4mk4cRARbHMnWnldhNrY6uYA6uQGHtwk8m6ZYUQeS88NV2nDppxRw23CbPnmw1cKY+Bkr+R1ZB9DGKvap21XJmNkbA5DGIkOKgZBdHj2CT070+wOfhY8InAppxT/nFPMPbfnv8RO6zVBT4CdEvmkBmtQrA00FkGapaLBbZF3Hx4knRCa4Ah8Dzm7DBZQa3TVGIRxuCMEi57hK+bww33jU1XRHGCBmZY8dBsKV2E0WrLBh+2Ai4QrH7c0t63dEnJJd3f7Ab/DzjVDCj7xvBHoeor2wVbsCg+nmXfndFMlM/hv4E+uRW6uoOYFk5Pbsd4PbqMlgP3cDQXCRioucNOYQc4qAL1cCg0DXopZKtNVXPs1ZE7yRZBRdmglyQWiChemDORVgAv++LwFaPeTW9pGg2kpOkZ6xDfiCOGwWy4kZ4YyRukNWnG6UaiaudYMi+gfG3Hkr2GG/DYVO/qniJPcq38Md5YA3+RxjHWhn1zcCpsGjTuv0KMYIi0WdM5GtnmyI/cd3KjEZ9g6Hydmu56bS8z2R4o6HdsmCBONEZFS4VzipGxpKKeVlL7UFwJcnkLNhanD8YNqI3XvpezlvVPsLkU5YtRJrsWfjw/nAaQbHax8a5Z8hm4QMgdwgdgypM4MW/cj8SqzscVY/jeTRuKp7/AcVT0vyxDMl5pJsWshMllk5FOyVq01/RVy76QoNaG+MJZ2DkrYGejx0KsX0NhRF+nK5RwC/ES3UeYug==
+  template:
+    metadata:
+      name: cloudflare-api-token
+      namespace: cert-manager
+    type: Opaque
+---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -9,9 +23,22 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:
-      - http01:
-          ingress:
-            ingressTemplate:
-              metadata:
-                annotations:
-                  traefik.ingress.kubernetes.io/router.entrypoints: web
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-k8s-vicio-ovh
+  namespace: monitoring
+spec:
+  secretName: wildcard-k8s-vicio-ovh-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.k8s.vicio.ovh"
+    - "k8s.vicio.ovh"

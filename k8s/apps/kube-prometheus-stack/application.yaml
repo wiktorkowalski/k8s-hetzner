@@ -65,12 +65,10 @@ spec:
           ingress:
             enabled: true
             ingressClassName: traefik
-            annotations:
-              cert-manager.io/cluster-issuer: letsencrypt-prod
             hosts:
               - grafana.k8s.vicio.ovh
             tls:
-              - secretName: grafana-tls
+              - secretName: wildcard-k8s-vicio-ovh-tls
                 hosts:
                   - grafana.k8s.vicio.ovh
           persistence:
