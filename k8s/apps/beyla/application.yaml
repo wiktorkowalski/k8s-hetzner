@@ -46,11 +46,8 @@ spec:
                 - k8s_namespace: "*"
               default_exclude_instrument: []
               exclude_instrument:
-                - k8s_pod_name: "tempo-*"
-                - k8s_pod_name: "loki-*"
-                - k8s_pod_name: "alloy-*"
-                - k8s_pod_name: "prometheus-*"
-                - exe_path: "*beyla"
+                - k8s_pod_name: "{tempo-*,loki-*,alloy-*,prometheus-*}"
+                - exe_path: "{*beyla,*alloy,*otelcol*,*ebpf-instrument,*prometheus-config-reloader}"
             attributes:
               kubernetes:
                 enable: true
