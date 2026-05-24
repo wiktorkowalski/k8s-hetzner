@@ -29,8 +29,13 @@ spec:
           seLinuxOptions:
             type: spc_t
 
-        tolerations:
-          - operator: Exists
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                    - key: node-role.kubernetes.io/control-plane
+                      operator: DoesNotExist
 
         config:
           create: true

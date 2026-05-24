@@ -85,8 +85,13 @@ spec:
 
         controller:
           type: daemonset
-          tolerations:
-            - operator: Exists
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: node-role.kubernetes.io/control-plane
+                        operator: DoesNotExist
 
         resources:
           requests:
