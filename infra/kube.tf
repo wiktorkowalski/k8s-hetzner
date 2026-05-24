@@ -83,6 +83,19 @@ module "kube-hetzner" {
 
   load_balancer_type     = "lb11"
   load_balancer_location = "fsn1"
+  lb_hostname            = "${var.cluster_subdomain}.${var.domain}"
+
+  # DNS round-robin API HA: api.k8s.vicio.ovh resolves to all 3 CP IPs.
+  # Kubeconfig uses this hostname instead of a single CP IP, so kubectl
+  # survives any single CP failure (no health checks though).
+  additional_tls_sans       = ["api.${var.cluster_subdomain}.${var.domain}"]
+  kubeconfig_server_address = "api.${var.cluster_subdomain}.${var.domain}"
+
+  enable_delete_protection = {
+    floating_ip   = true
+    load_balancer = true
+    volume        = true
+  }
 
   cni_plugin              = "cilium"
   enable_klipper_metal_lb = false
@@ -109,6 +122,20 @@ module "kube-hetzner" {
 
   automatically_upgrade_k3s = true
   automatically_upgrade_os  = true
+
+  # Reserve resources for kubelet/containerd so workload OOM can't starve the node
+  k3s_global_kubelet_args = [
+    "kube-reserved=cpu=200m,memory=512Mi",
+    "system-reserved=cpu=100m,memory=256Mi",
+  ]
+
+  # Restrict kured reboots to Saturday 3-6 AM Warsaw time
+  kured_options = {
+    "reboot-days" = "sa"
+    "start-time"  = "3am"
+    "end-time"    = "6am"
+    "time-zone"   = "Europe/Warsaw"
+  }
 
   # Lock down the Kubernetes API (6443) to management CIDRs only.
   # SSH stays open (module default 0.0.0.0/0) because the module's remote-exec provisioner needs

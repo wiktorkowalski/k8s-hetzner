@@ -41,3 +41,14 @@ resource "cloudflare_dns_record" "cluster_wildcard_v6" {
   proxied = false
   comment = "Wildcard for Kubernetes cluster services (IPv6)"
 }
+
+resource "cloudflare_dns_record" "api_cp" {
+  count   = length(module.kube-hetzner.control_planes_public_ipv4)
+  zone_id = data.cloudflare_zone.main.zone_id
+  name    = "api.${var.cluster_subdomain}.${var.domain}"
+  content = module.kube-hetzner.control_planes_public_ipv4[count.index]
+  type    = "A"
+  ttl     = 300
+  proxied = false
+  comment = "API round-robin CP ${count.index}"
+}
