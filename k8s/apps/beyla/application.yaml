@@ -16,25 +16,16 @@ spec:
     helm:
       releaseName: beyla
       valuesObject:
-        # Unprivileged mode with specific eBPF capabilities
-        privileged: false
+        # Privileged mode required — unprivileged fails with "permission denied"
+        # on cgroup memory accounting detection (eBPF memlock setup).
+        # MicroOS SELinux enforcing needs spc_t even in privileged mode.
+        privileged: true
         hostPID: true
 
         securityContext:
           runAsUser: 0
           seLinuxOptions:
             type: spc_t
-          capabilities:
-            add:
-              - BPF
-              - SYS_PTRACE
-              - NET_RAW
-              - CHECKPOINT_RESTORE
-              - DAC_READ_SEARCH
-              - PERFMON
-              - SYS_RESOURCE
-            drop:
-              - ALL
 
         tolerations:
           - operator: Exists
