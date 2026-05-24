@@ -23,7 +23,9 @@ spec:
         hostPID: true
 
         securityContext:
+          privileged: true
           runAsUser: 0
+          readOnlyRootFilesystem: false
           seLinuxOptions:
             type: spc_t
 
