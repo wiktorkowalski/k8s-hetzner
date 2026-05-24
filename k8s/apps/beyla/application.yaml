@@ -42,8 +42,8 @@ spec:
             routes:
               unmatched: heuristic
             discovery:
-              services:
-                - k8s_namespace: "default"
+              instrument:
+                - k8s_namespace: "*"
             attributes:
               kubernetes:
                 enable: true
