@@ -44,6 +44,13 @@ spec:
             discovery:
               instrument:
                 - k8s_namespace: "*"
+              default_exclude_instrument: []
+              exclude_instrument:
+                - k8s_pod_name: "tempo-*"
+                - k8s_pod_name: "loki-*"
+                - k8s_pod_name: "alloy-*"
+                - k8s_pod_name: "prometheus-*"
+                - exe_path: "*beyla"
             attributes:
               kubernetes:
                 enable: true
