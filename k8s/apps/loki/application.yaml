@@ -22,6 +22,8 @@ spec:
           auth_enabled: false
           commonConfig:
             replication_factor: 1
+          memberlist:
+            abort_if_cluster_join_fails: false
           storage:
             type: filesystem
           schemaConfig:
