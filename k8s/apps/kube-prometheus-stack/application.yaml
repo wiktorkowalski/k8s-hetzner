@@ -82,7 +82,9 @@ spec:
                 hosts:
                   - grafana.k8s.vicio.ovh
           persistence:
-            enabled: false
+            enabled: true
+            type: emptyDir
+            size: 1Gi
           resources:
             requests:
               cpu: 100m
