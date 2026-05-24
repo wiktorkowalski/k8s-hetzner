@@ -62,8 +62,17 @@ spec:
                 memory: 128Mi
 
         grafana:
-          service:
-            type: ClusterIP
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+            hosts:
+              - grafana.k8s.vicio.ovh
+            tls:
+              - secretName: grafana-tls
+                hosts:
+                  - grafana.k8s.vicio.ovh
           persistence:
             enabled: true
             storageClassName: longhorn
