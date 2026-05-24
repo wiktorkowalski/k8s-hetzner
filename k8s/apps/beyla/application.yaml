@@ -39,6 +39,9 @@ spec:
               endpoint: "http://tempo.monitoring.svc:4317"
             otel_metrics_export:
               endpoint: "http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/otlp"
+            network:
+              enable: false
+            context_propagation: none
             routes:
               unmatched: heuristic
             discovery:
