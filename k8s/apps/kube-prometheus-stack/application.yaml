@@ -64,14 +64,6 @@ spec:
                 hosts:
                   - alertmanager.k8s.vicio.ovh
           alertmanagerSpec:
-            storage:
-              volumeClaimTemplate:
-                spec:
-                  storageClassName: longhorn
-                  accessModes: ["ReadWriteOnce"]
-                  resources:
-                    requests:
-                      storage: 2Gi
             resources:
               requests:
                 cpu: 50m
@@ -90,9 +82,7 @@ spec:
                 hosts:
                   - grafana.k8s.vicio.ovh
           persistence:
-            enabled: true
-            storageClassName: longhorn
-            size: 2Gi
+            enabled: false
           resources:
             requests:
               cpu: 100m
