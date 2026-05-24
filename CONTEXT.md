@@ -60,6 +60,37 @@ cert-manager, Longhorn, metrics-server, Cilium with Hubble).
 Everything else (LGTM, Authentik, CNPG, Headlamp, backup config) lands
 in subsequent PRs.
 
+## Observability stack
+
+Deployed 2026-05-24. All in `monitoring` namespace, managed by ArgoCD.
+
+- **kube-prometheus-stack** — Prometheus (20Gi, 15d retention),
+  Grafana (ClusterIP, port-forward only until Authentik), Alertmanager
+  (2Gi), node-exporter (6 pods), kube-state-metrics, Prometheus
+  operator. k3s-incompatible monitors disabled (controller-manager,
+  scheduler, proxy, etcd).
+- **Loki** — SingleBinary mode, filesystem storage (10Gi Longhorn).
+  Log aggregation for all pods.
+- **Tempo** — Single binary, filesystem storage (10Gi Longhorn), 72h
+  retention. OTLP gRPC+HTTP receivers enabled.
+- **Alloy** — DaemonSet (6 pods, all nodes). Ships pod logs → Loki.
+  OTLP receiver for traces → Tempo.
+- **Beyla** — DaemonSet (6 pods, all nodes). eBPF auto-instrumentation
+  for HTTP/gRPC. Sends traces → Tempo. Requires `privileged: true` +
+  `spc_t` SELinux context on MicroOS — see [[Gotchas]].
+
+Grafana datasources provisioned: Prometheus (default), Loki, Tempo.
+Cross-linked: Loki traceID → Tempo, Tempo → Loki logs, Tempo service
+map → Prometheus.
+
+## API HA
+
+`api.k8s.vicio.ovh` is a DNS round-robin A record pointing to all 3
+CP public IPs. Kubeconfig uses this hostname instead of a single CP
+IP. No health checks — if one CP dies, ~1/3 of requests fail until
+DNS cache expires (TTL 300s). The API server TLS cert includes
+`api.k8s.<domain>` as a SAN via `additional_tls_sans`.
+
 ## Root app
 
 `k8s/root-app/root-application.yaml` is the ArgoCD `Application` that
@@ -138,6 +169,16 @@ removal, leaving the API server returning `ServiceUnavailable`. **A
 blue/green CP swap is not safe via `terraform apply` alone** — the
 recovery path is a full destroy+recreate (or, if VMs must be
 preserved, manual etcd member surgery and state mv).
+
+### Beyla requires privileged + spc_t on MicroOS
+
+Beyla's eBPF memlock setup needs to detect cgroup memory accounting.
+Unprivileged mode with individual capabilities (`BPF`, `SYS_PTRACE`,
+`PERFMON`, `SYS_ADMIN`, etc.) is NOT sufficient — the chart's
+`privileged: true` flag only adds capabilities, it does **not** set
+`container.securityContext.privileged: true`. You must explicitly set
+`securityContext.privileged: true` in the Helm values. Additionally,
+MicroOS SELinux enforcing requires `seLinuxOptions.type: spc_t`.
 
 ### kube-hetzner indexes subnets by `count.index`
 
