@@ -11,7 +11,7 @@ spec:
       kind: Rule
       middlewares:
         - name: homeonly
-          namespace: traefik
+          namespace: monitoring
       services:
         - name: kube-prometheus-stack-prometheus
           port: 9090
@@ -30,7 +30,7 @@ spec:
       kind: Rule
       middlewares:
         - name: homeonly
-          namespace: traefik
+          namespace: monitoring
       services:
         - name: kube-prometheus-stack-alertmanager
           port: 9093
@@ -49,7 +49,7 @@ spec:
       kind: Rule
       middlewares:
         - name: homeonly
-          namespace: traefik
+          namespace: monitoring
       services:
         - name: kube-prometheus-stack-grafana
           port: 80
@@ -68,7 +68,7 @@ spec:
       kind: Rule
       middlewares:
         - name: homeonly
-          namespace: traefik
+          namespace: headlamp
       services:
         - name: headlamp
           port: 80
@@ -87,7 +87,7 @@ spec:
       kind: Rule
       middlewares:
         - name: homeonly
-          namespace: traefik
+          namespace: kube-system
       services:
         - name: hubble-ui
           port: 80

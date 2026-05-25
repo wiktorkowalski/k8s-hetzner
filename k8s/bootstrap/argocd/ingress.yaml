@@ -11,7 +11,7 @@ spec:
       kind: Rule
       middlewares:
         - name: homeonly
-          namespace: traefik
+          namespace: argocd
       services:
         - name: argocd-server
           port: 80

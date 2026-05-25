@@ -7,3 +7,43 @@ spec:
   ipAllowList:
     sourceRange:
       - 185.14.151.136/32
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: homeonly
+  namespace: monitoring
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: homeonly
+  namespace: kube-system
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: homeonly
+  namespace: headlamp
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: homeonly
+  namespace: argocd
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32
