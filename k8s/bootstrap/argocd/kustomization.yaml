@@ -17,3 +17,10 @@ patches:
         path: /data
         value:
           server.insecure: "true"
+  - target:
+      kind: ConfigMap
+      name: argocd-cm
+    patch: |-
+      - op: add
+        path: /data/accounts.admin
+        value: "apiKey,login"
