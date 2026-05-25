@@ -152,7 +152,9 @@ module "kube-hetzner" {
         format: json
     tracing:
       otlp:
+        enabled: true
         grpc:
+          enabled: true
           endpoint: tempo.monitoring.svc:4317
           insecure: true
   EOT
