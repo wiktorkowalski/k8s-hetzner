@@ -22,6 +22,7 @@ spec:
   routes:
     - match: Host(`argocd.k8s.vicio.ovh`) && Path(`/api/webhook`)
       kind: Rule
+      priority: 100
       middlewares:
         - name: github-only
           namespace: argocd
