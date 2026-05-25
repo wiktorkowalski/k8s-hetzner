@@ -1,0 +1,44 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+
+configMapGenerator:
+  - name: grafana-dashboard-traefik
+    files:
+      - traefik.json  # grafana.com/dashboards/17347 rev 9
+  - name: grafana-dashboard-argocd
+    files:
+      - argocd.json  # grafana.com/dashboards/19993 rev 7
+  - name: grafana-dashboard-cilium-hubble
+    files:
+      - cilium-hubble.json  # grafana.com/dashboards/16613 rev 1
+  - name: grafana-dashboard-longhorn
+    files:
+      - longhorn.json  # grafana.com/dashboards/16888 rev 12
+  - name: grafana-dashboard-loki
+    files:
+      - loki.json  # grafana.com/dashboards/13186 rev 1
+  - name: grafana-dashboard-tempo
+    files:
+      - tempo.json  # grafana.com/dashboards/23242 rev 1
+  - name: grafana-dashboard-cert-manager
+    files:
+      - cert-manager.json  # grafana.com/dashboards/20340 rev 1
+  - name: grafana-dashboard-k8s-overview
+    files:
+      - k8s-overview.json  # grafana.com/dashboards/21410 rev 7
+  - name: grafana-dashboard-node-exporter-full
+    files:
+      - node-exporter-full.json  # grafana.com/dashboards/1860 rev 45
+  - name: grafana-dashboard-coredns
+    files:
+      - coredns.json  # grafana.com/dashboards/15762 rev 22
+  - name: grafana-dashboard-apiserver
+    files:
+      - apiserver.json  # grafana.com/dashboards/15761 rev 21
