@@ -1,0 +1,9 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: homeonly
+  namespace: traefik
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32

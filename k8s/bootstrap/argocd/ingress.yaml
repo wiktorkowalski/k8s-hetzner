@@ -5,6 +5,7 @@ metadata:
   namespace: argocd
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:

@@ -29,6 +29,8 @@ spec:
           ingress:
             enabled: true
             ingressClassName: traefik
+            annotations:
+              traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
             hosts:
               - prometheus.k8s.vicio.ovh
             tls:
@@ -57,6 +59,8 @@ spec:
           ingress:
             enabled: true
             ingressClassName: traefik
+            annotations:
+              traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
             hosts:
               - alertmanager.k8s.vicio.ovh
             tls:
@@ -75,6 +79,8 @@ spec:
           ingress:
             enabled: true
             ingressClassName: traefik
+            annotations:
+              traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
             hosts:
               - grafana.k8s.vicio.ovh
             tls:
