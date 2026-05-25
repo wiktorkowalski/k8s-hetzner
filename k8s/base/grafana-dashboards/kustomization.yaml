@@ -24,9 +24,12 @@ configMapGenerator:
   - name: grafana-dashboard-loki
     files:
       - loki.json  # grafana.com/dashboards/13186 rev 1
-  - name: grafana-dashboard-tempo
+  - name: grafana-dashboard-tempo-writes
     files:
-      - tempo.json  # grafana.com/dashboards/23242 rev 1
+      - tempo-writes.json  # grafana/tempo mixin — write path
+  - name: grafana-dashboard-tempo-resources
+    files:
+      - tempo-resources.json  # grafana/tempo mixin — resource usage
   - name: grafana-dashboard-cert-manager
     files:
       - cert-manager.json  # grafana.com/dashboards/20340 rev 1
