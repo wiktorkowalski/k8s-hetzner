@@ -89,7 +89,7 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: hubble
+  name: hubble-metrics
   namespace: kube-system
 spec:
   selector:
@@ -99,7 +99,7 @@ spec:
     matchNames:
       - kube-system
   endpoints:
-    - port: peer-service
+    - port: hubble-metrics
       path: /metrics
 ---
 apiVersion: monitoring.coreos.com/v1
