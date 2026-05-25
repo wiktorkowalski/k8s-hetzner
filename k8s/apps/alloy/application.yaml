@@ -17,6 +17,12 @@ spec:
       releaseName: alloy
       valuesObject:
         alloy:
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
           configMap:
             content: |
               // Discover all Kubernetes pods
@@ -88,12 +94,6 @@ spec:
           tolerations:
             - operator: Exists
 
-        resources:
-          requests:
-            cpu: 50m
-            memory: 128Mi
-          limits:
-            memory: 256Mi
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
