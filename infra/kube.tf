@@ -112,6 +112,17 @@ module "kube-hetzner" {
         enabled: true
       ui:
         enabled: true
+      metrics:
+        enabled:
+          - dns
+          - drop
+          - tcp
+          - flow
+          - icmp
+          - http
+          - port-distribution
+    prometheus:
+      enabled: true
   EOT
 
   enable_longhorn     = true
