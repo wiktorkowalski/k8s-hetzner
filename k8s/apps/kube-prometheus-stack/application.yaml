@@ -68,53 +68,6 @@ spec:
               memory: 128Mi
             limits:
               memory: 256Mi
-          dashboardProviders:
-            dashboardproviders.yaml:
-              apiVersion: 1
-              providers:
-                - name: grafana-community
-                  orgId: 1
-                  folder: Community
-                  type: file
-                  disableDeletion: false
-                  editable: true
-                  options:
-                    path: /var/lib/grafana/dashboards/grafana-community
-          dashboards:
-            grafana-community:
-              traefik:
-                url: https://grafana.com/api/dashboards/17347/revisions/9/download
-                datasource: Prometheus
-              argocd:
-                url: https://grafana.com/api/dashboards/19993/revisions/7/download
-                datasource: Prometheus
-              cilium-hubble:
-                url: https://grafana.com/api/dashboards/16613/revisions/1/download
-                datasource: Prometheus
-              longhorn:
-                url: https://grafana.com/api/dashboards/16888/revisions/12/download
-                datasource: Prometheus
-              loki:
-                url: https://grafana.com/api/dashboards/13186/revisions/1/download
-                datasource: Prometheus
-              tempo:
-                url: https://grafana.com/api/dashboards/23242/revisions/1/download
-                datasource: Prometheus
-              cert-manager:
-                url: https://grafana.com/api/dashboards/20340/revisions/1/download
-                datasource: Prometheus
-              k8s-overview:
-                url: https://grafana.com/api/dashboards/21410/revisions/7/download
-                datasource: Prometheus
-              node-exporter-full:
-                url: https://grafana.com/api/dashboards/1860/revisions/45/download
-                datasource: Prometheus
-              coredns:
-                url: https://grafana.com/api/dashboards/15762/revisions/22/download
-                datasource: Prometheus
-              apiserver:
-                url: https://grafana.com/api/dashboards/15761/revisions/21/download
-                datasource: Prometheus
           additionalDataSources:
             - name: Loki
               type: loki
