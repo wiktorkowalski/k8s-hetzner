@@ -144,12 +144,17 @@ module "kube-hetzner" {
   # ed25519 key-only auth (no passwords) so brute force is impractical.
   firewall_kube_api_source = var.management_cidrs
 
-  # Traefik: enable JSON access logs. Dashboard is NOT exposed via Ingress yet — wait for Authentik so it's behind auth.
+  # Traefik: JSON access logs + OTLP tracing to Tempo
   traefik_merge_values = <<-EOT
     logs:
       access:
         enabled: true
         format: json
+    tracing:
+      otlp:
+        grpc:
+          endpoint: tempo.monitoring.svc:4317
+          insecure: true
   EOT
 
   # Bootstrap ArgoCD as part of cluster install. After this runs, ArgoCD owns the rest via the
