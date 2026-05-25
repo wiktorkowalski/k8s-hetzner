@@ -9,33 +9,36 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://kubernetes-sigs.github.io/headlamp/
-    chart: headlamp
-    targetRevision: 0.42.0
-    helm:
-      releaseName: headlamp
-      valuesObject:
-        ingress:
-          enabled: true
-          ingressClassName: traefik
-          annotations:
-            traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
-          hosts:
-            - host: headlamp.k8s.vicio.ovh
-              paths:
-                - path: /
-                  type: Prefix
-          tls:
-            - secretName: wildcard-k8s-vicio-ovh-tls
-              hosts:
-                - headlamp.k8s.vicio.ovh
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            memory: 128Mi
+  sources:
+    - repoURL: https://kubernetes-sigs.github.io/headlamp/
+      chart: headlamp
+      targetRevision: 0.42.0
+      helm:
+        releaseName: headlamp
+        valuesObject:
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
+            hosts:
+              - host: headlamp.k8s.vicio.ovh
+                paths:
+                  - path: /
+                    type: Prefix
+            tls:
+              - secretName: wildcard-k8s-vicio-ovh-tls
+                hosts:
+                  - headlamp.k8s.vicio.ovh
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+    - repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
+      targetRevision: master
+      path: k8s/base/headlamp
   destination:
     server: https://kubernetes.default.svc
     namespace: headlamp
