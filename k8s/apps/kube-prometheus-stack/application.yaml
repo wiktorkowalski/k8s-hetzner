@@ -27,16 +27,7 @@ spec:
 
         prometheus:
           ingress:
-            enabled: true
-            ingressClassName: traefik
-            annotations:
-              traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
-            hosts:
-              - prometheus.k8s.vicio.ovh
-            tls:
-              - secretName: wildcard-k8s-vicio-ovh-tls
-                hosts:
-                  - prometheus.k8s.vicio.ovh
+            enabled: false
           prometheusSpec:
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
@@ -57,16 +48,7 @@ spec:
 
         alertmanager:
           ingress:
-            enabled: true
-            ingressClassName: traefik
-            annotations:
-              traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
-            hosts:
-              - alertmanager.k8s.vicio.ovh
-            tls:
-              - secretName: wildcard-k8s-vicio-ovh-tls
-                hosts:
-                  - alertmanager.k8s.vicio.ovh
+            enabled: false
           alertmanagerSpec:
             resources:
               requests:
@@ -77,16 +59,7 @@ spec:
 
         grafana:
           ingress:
-            enabled: true
-            ingressClassName: traefik
-            annotations:
-              traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
-            hosts:
-              - grafana.k8s.vicio.ovh
-            tls:
-              - secretName: wildcard-k8s-vicio-ovh-tls
-                hosts:
-                  - grafana.k8s.vicio.ovh
+            enabled: false
           persistence:
             enabled: false
           resources:

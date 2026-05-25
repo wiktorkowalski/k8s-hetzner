@@ -17,19 +17,7 @@ spec:
         releaseName: headlamp
         valuesObject:
           ingress:
-            enabled: true
-            ingressClassName: traefik
-            annotations:
-              traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
-            hosts:
-              - host: headlamp.k8s.vicio.ovh
-                paths:
-                  - path: /
-                    type: Prefix
-            tls:
-              - secretName: wildcard-k8s-vicio-ovh-tls
-                hosts:
-                  - headlamp.k8s.vicio.ovh
+            enabled: false
           resources:
             requests:
               cpu: 50m
