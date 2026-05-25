@@ -15,7 +15,7 @@ module "kube-hetzner" {
   cluster_name   = var.cluster_name
 
   # Pin k3s minor channel so module defaults don't drift
-  initial_k3s_channel = "v1.32"
+  initial_k3s_channel = "v1.35"
 
   # 3 cx33 control planes — one per DC for geo-HA + etcd quorum.
   # cx33 (4 vCPU / 8 GB / 80 GB) needed for CP + DaemonSet monitoring (Alloy, Beyla, node-exporter).
