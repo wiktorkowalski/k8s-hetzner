@@ -83,48 +83,37 @@ spec:
           dashboards:
             grafana-community:
               traefik:
-                gnetId: 17347
-                revision: 9
+                url: https://grafana.com/api/dashboards/17347/revisions/9/download
                 datasource: Prometheus
               argocd:
-                gnetId: 19993
-                revision: 7
+                url: https://grafana.com/api/dashboards/19993/revisions/7/download
                 datasource: Prometheus
               cilium-hubble:
-                gnetId: 16613
-                revision: 1
+                url: https://grafana.com/api/dashboards/16613/revisions/1/download
                 datasource: Prometheus
               longhorn:
-                gnetId: 16888
-                revision: 12
+                url: https://grafana.com/api/dashboards/16888/revisions/12/download
                 datasource: Prometheus
               loki:
-                gnetId: 13186
-                revision: 1
+                url: https://grafana.com/api/dashboards/13186/revisions/1/download
                 datasource: Prometheus
               tempo:
-                gnetId: 23242
-                revision: 1
+                url: https://grafana.com/api/dashboards/23242/revisions/1/download
                 datasource: Prometheus
               cert-manager:
-                gnetId: 20340
-                revision: 1
+                url: https://grafana.com/api/dashboards/20340/revisions/1/download
                 datasource: Prometheus
               k8s-overview:
-                gnetId: 21410
-                revision: 7
+                url: https://grafana.com/api/dashboards/21410/revisions/7/download
                 datasource: Prometheus
               node-exporter-full:
-                gnetId: 1860
-                revision: 45
+                url: https://grafana.com/api/dashboards/1860/revisions/45/download
                 datasource: Prometheus
               coredns:
-                gnetId: 15762
-                revision: 22
+                url: https://grafana.com/api/dashboards/15762/revisions/22/download
                 datasource: Prometheus
               apiserver:
-                gnetId: 15761
-                revision: 21
+                url: https://grafana.com/api/dashboards/15761/revisions/21/download
                 datasource: Prometheus
           additionalDataSources:
             - name: Loki

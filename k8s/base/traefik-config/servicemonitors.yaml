@@ -68,8 +68,6 @@ spec:
     matchLabels:
       k8s-app: cilium
   podMetricsEndpoints:
-    - port: peer-service
-      path: /metrics
     - port: prometheus
       path: /metrics
 ---
