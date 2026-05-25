@@ -39,6 +39,3 @@ configMapGenerator:
   - name: grafana-dashboard-coredns
     files:
       - coredns.json  # grafana.com/dashboards/15762 rev 22
-  - name: grafana-dashboard-apiserver
-    files:
-      - apiserver.json  # grafana.com/dashboards/15761 rev 21
