@@ -62,6 +62,10 @@ spec:
             enabled: false
           persistence:
             enabled: false
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
           resources:
             requests:
               cpu: 100m
