@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hubble-ui
+  namespace: kube-system
+  annotations:
+    traefik.io/router.middlewares: traefik-homeonly@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: hubble.k8s.vicio.ovh
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hubble-ui
+                port:
+                  number: 80
+  tls:
+    - secretName: wildcard-k8s-vicio-ovh-tls
+      hosts:
+        - hubble.k8s.vicio.ovh
