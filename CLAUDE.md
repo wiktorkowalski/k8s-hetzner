@@ -18,7 +18,9 @@ k8s/
 docs/                   # Runbooks
 ```
 
-Only ArgoCD Application manifests go in `k8s/apps/`. Raw manifests go in `k8s/base/` and are referenced by an Application via `source.path`.
+**WARNING:** root-app uses `directory.recurse: true` on `k8s/apps/`. Only ArgoCD Application CRDs belong there — any other YAML placed in that directory tree will be applied to the cluster.
+
+Raw K8s manifests go in `k8s/base/` and are referenced by an Application via `source.path`.
 
 ## Cluster topology
 
