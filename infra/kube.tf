@@ -161,6 +161,13 @@ module "kube-hetzner" {
       access:
         enabled: true
         format: json
+    ports:
+      postgres:
+        port: 5432
+        expose:
+          default: true
+        exposedPort: 5432
+        protocol: TCP
     tracing:
       otlp:
         enabled: true

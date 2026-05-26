@@ -1,0 +1,76 @@
+apiVersion: traefik.io/v1alpha1
+kind: MiddlewareTCP
+metadata:
+  name: homeonly-tcp
+  namespace: postgres
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32
+      - 87.205.23.9/32
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: homeonly
+  namespace: postgres
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32
+      - 87.205.23.9/32
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: pg-alpha
+  namespace: postgres
+spec:
+  entryPoints:
+    - postgres
+  routes:
+    - match: HostSNI(`pg-alpha.k8s.vicio.ovh`)
+      middlewares:
+        - name: homeonly-tcp
+      services:
+        - name: pg-alpha-rw
+          port: 5432
+  tls:
+    passthrough: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: pg-beta
+  namespace: postgres
+spec:
+  entryPoints:
+    - postgres
+  routes:
+    - match: HostSNI(`pg-beta.k8s.vicio.ovh`)
+      middlewares:
+        - name: homeonly-tcp
+      services:
+        - name: pg-beta-rw
+          port: 5432
+  tls:
+    passthrough: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pgadmin
+  namespace: postgres
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`pgadmin.k8s.vicio.ovh`)
+      kind: Rule
+      middlewares:
+        - name: homeonly
+      services:
+        - name: pgadmin
+          port: 80
+  tls:
+    secretName: wildcard-k8s-vicio-ovh-tls
