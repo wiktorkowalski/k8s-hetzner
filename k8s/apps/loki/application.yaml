@@ -26,6 +26,7 @@ spec:
             abort_if_cluster_join_fails: false
           compactor:
             retention_enabled: true
+            delete_request_store: filesystem
           limits_config:
             retention_period: 2160h
           storage:
