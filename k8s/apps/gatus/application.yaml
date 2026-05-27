@@ -51,7 +51,7 @@ spec:
                 insecure: true
               interval: 30s
               conditions:
-                - "[STATUS] any 200, 401"
+                - "[STATUS] == any(200, 401)"
             - name: pg-alpha
               group: Databases
               url: tcp://pg-alpha-rw.postgres.svc:5432
