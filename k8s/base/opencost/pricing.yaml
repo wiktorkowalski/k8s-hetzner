@@ -7,7 +7,7 @@ data:
   default.json: |
     {
       "provider": "custom",
-      "description": "Hetzner Cloud pricing (EUR). 3xCX33 CP + 3xCX43 agents + 6xIPv4 + LB11 = EUR 99.54/mo",
+      "description": "Hetzner Cloud EUR pricing. CX43 agent rates (8 vCPU, 16GB, EUR 18.44/mo incl IPv4). Total cluster: 3xCX33+3xCX43+6xIPv4+LB11 = EUR 99.54/mo",
       "CPU": "0.00189",
       "RAM": "0.00063",
       "storage": "0.00002",
@@ -17,22 +17,4 @@ data:
       "zoneNetworkEgress": "0",
       "regionNetworkEgress": "0",
       "internetNetworkEgress": "0"
-    }
-  cx33.json: |
-    {
-      "provider": "custom",
-      "description": "Hetzner CX33: 4 vCPU, 8GB RAM, EUR 11.67/mo (incl IPv4)",
-      "CPU": "0.00240",
-      "RAM": "0.00080",
-      "storage": "0.00002",
-      "GPU": "0"
-    }
-  cx43.json: |
-    {
-      "provider": "custom",
-      "description": "Hetzner CX43: 8 vCPU, 16GB RAM, EUR 18.44/mo (incl IPv4)",
-      "CPU": "0.00189",
-      "RAM": "0.00063",
-      "storage": "0.00002",
-      "GPU": "0"
     }
