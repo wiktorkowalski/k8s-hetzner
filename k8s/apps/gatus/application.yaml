@@ -118,18 +118,6 @@ spec:
               interval: 60s
               conditions:
                 - "[STATUS] == any(200, 302)"
-            - name: pg-alpha
-              group: Databases
-              url: tcp://pg-alpha-rw.postgres.svc:5432
-              interval: 30s
-              conditions:
-                - "[CONNECTED] == true"
-            - name: pg-beta
-              group: Databases
-              url: tcp://pg-beta-rw.postgres.svc:5432
-              interval: 30s
-              conditions:
-                - "[CONNECTED] == true"
         extraVolumeMounts:
           - name: data
             mountPath: /data

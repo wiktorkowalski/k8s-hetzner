@@ -155,15 +155,6 @@ module "kube-hetzner" {
   # ed25519 key-only auth (no passwords) so brute force is impractical.
   firewall_kube_api_source = var.management_cidrs
 
-  # Pull-through cache for Docker Hub — avoids rate limits, speeds up pulls.
-  # Points to the in-cluster registry deployed via ArgoCD (k8s/apps/registry/).
-  k3s_registries = <<-EOT
-    mirrors:
-      docker.io:
-        endpoint:
-          - "http://registry-docker-registry.registry.svc.cluster.local:5000"
-  EOT
-
   # Traefik: JSON access logs + OTLP tracing to Tempo
   traefik_merge_values = <<-EOT
     logs:

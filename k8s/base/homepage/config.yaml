@@ -59,12 +59,6 @@ data:
             href: https://pgadmin.k8s.vicio.ovh
             icon: pgadmin
             description: PostgreSQL management
-        - pg-alpha:
-            icon: postgresql
-            description: "pg-alpha.k8s.vicio.ovh:5432"
-        - pg-beta:
-            icon: postgresql
-            description: "pg-beta.k8s.vicio.ovh:5432"
     - Observability:
         - Prometheus:
             href: https://prometheus.k8s.vicio.ovh
