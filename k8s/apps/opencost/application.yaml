@@ -27,9 +27,19 @@ spec:
             enabled: true
           customPricing:
             enabled: true
-            createConfigmap: false
-            configmapName: opencost-hetzner-pricing
+            createConfigmap: true
             provider: custom
+            costModel:
+              description: "Hetzner CX43 rates (EUR). Total cluster EUR 99.54/mo"
+              CPU: "0.00189"
+              RAM: "0.00063"
+              storage: "0.00002"
+              GPU: "0"
+              spotCPU: "0"
+              spotRAM: "0"
+              zoneNetworkEgress: "0"
+              regionNetworkEgress: "0"
+              internetNetworkEgress: "0"
         resources:
           requests:
             cpu: 50m
