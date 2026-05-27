@@ -74,3 +74,14 @@ spec:
     sourceRange:
       - 185.14.151.136/32
       - 87.205.23.9/32
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: homeonly
+  namespace: goldilocks
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32
+      - 87.205.23.9/32

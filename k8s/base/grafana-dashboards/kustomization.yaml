@@ -42,3 +42,9 @@ configMapGenerator:
   - name: grafana-dashboard-coredns
     files:
       - coredns.json  # grafana.com/dashboards/15762 rev 22
+  - name: grafana-dashboard-alloy-resources
+    files:
+      - alloy-resources.json  # grafana/alloy mixin — resource usage
+  - name: grafana-dashboard-alloy-loki
+    files:
+      - alloy-loki.json  # grafana/alloy mixin — loki pipeline health
