@@ -29,10 +29,10 @@ spec:
             enabled: true
             provider: custom
             costModel:
-              CPU: "0.01"
-              RAM: "0.004"
-              storage: "0.0002"
-              description: "Hetzner cx43 approximate pricing"
+              CPU: "0.00206"
+              RAM: "0.00069"
+              storage: "0.00002"
+              description: "Hetzner actual pricing: 3xCX33+3xCX43+6xIPv4+LB11 = EUR 99.54/mo"
         resources:
           requests:
             cpu: 50m
