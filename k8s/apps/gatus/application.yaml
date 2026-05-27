@@ -1,0 +1,86 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gatus
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://twin.github.io/helm-charts
+    chart: gatus
+    targetRevision: 1.5.0
+    helm:
+      releaseName: gatus
+      valuesObject:
+        serviceAccount:
+          create: true
+          name: gatus
+        rbac:
+          enabled: true
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
+        config:
+          storage:
+            type: sqlite
+            path: /data/data.db
+          kubernetes:
+            auto-discover: true
+            cluster-mode: cluster
+            excluded-suffix-names:
+              - -headless
+              - -metrics
+              - -operated
+              - -memberlist
+            service-default-check-interval: 60s
+            service-default-conditions:
+              - "[STATUS] any 200, 301, 302, 403"
+          endpoints:
+            - name: Kubernetes API
+              group: Infrastructure
+              url: https://kubernetes.default.svc:443/healthz
+              client:
+                insecure: true
+              interval: 30s
+              conditions:
+                - "[STATUS] == 200"
+            - name: pg-alpha
+              group: Databases
+              url: tcp://pg-alpha-rw.postgres.svc:5432
+              interval: 30s
+              conditions:
+                - "[CONNECTED] == true"
+            - name: pg-beta
+              group: Databases
+              url: tcp://pg-beta-rw.postgres.svc:5432
+              interval: 30s
+              conditions:
+                - "[CONNECTED] == true"
+        persistence:
+          enabled: true
+          storageClass: longhorn
+          size: 1Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gatus
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 5m

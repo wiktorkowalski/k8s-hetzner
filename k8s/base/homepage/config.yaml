@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: k8s.vicio.ovh
+    favicon: https://kubernetes.io/images/favicon.png
+    headerStyle: clean
+    layout:
+      Admin:
+        style: row
+        columns: 4
+      Databases:
+        style: row
+        columns: 3
+      Observability:
+        style: row
+        columns: 4
+      Infrastructure:
+        style: row
+        columns: 3
+    color: slate
+    target: _blank
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: k8s-hetzner
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+  services.yaml: |
+    - Admin:
+        - ArgoCD:
+            href: https://argocd.k8s.vicio.ovh
+            icon: argocd
+            description: GitOps deployment
+        - Grafana:
+            href: https://grafana.k8s.vicio.ovh
+            icon: grafana
+            description: Dashboards & observability
+        - Headlamp:
+            href: https://headlamp.k8s.vicio.ovh
+            icon: kubernetes-dashboard
+            description: Cluster management
+        - Traefik:
+            href: https://traefik.k8s.vicio.ovh
+            icon: traefik
+            description: Ingress controller
+    - Databases:
+        - pgAdmin:
+            href: https://pgadmin.k8s.vicio.ovh
+            icon: pgadmin
+            description: PostgreSQL management
+        - pg-alpha:
+            icon: postgresql
+            description: "pg-alpha.k8s.vicio.ovh:5432"
+        - pg-beta:
+            icon: postgresql
+            description: "pg-beta.k8s.vicio.ovh:5432"
+    - Observability:
+        - Prometheus:
+            href: https://prometheus.k8s.vicio.ovh
+            icon: prometheus
+            description: Metrics & alerting
+        - Alertmanager:
+            href: https://alertmanager.k8s.vicio.ovh
+            icon: alertmanager
+            description: Alert routing
+        - Gatus:
+            href: https://gatus.k8s.vicio.ovh
+            icon: gatus
+            description: Health checks
+        - Hubble UI:
+            href: https://hubble.k8s.vicio.ovh
+            icon: cilium
+            description: Network observability
+    - Infrastructure:
+        - OpenCost:
+            href: https://opencost.k8s.vicio.ovh
+            icon: opencost
+            description: Cost monitoring
+  bookmarks.yaml: |
+    []
+  docker.yaml: |
+    {}
+  kubernetes.yaml: |
+    mode: cluster
