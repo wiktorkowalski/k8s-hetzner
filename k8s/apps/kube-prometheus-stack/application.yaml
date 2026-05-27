@@ -29,6 +29,7 @@ spec:
           ingress:
             enabled: false
           prometheusSpec:
+            externalUrl: https://prometheus.k8s.vicio.ovh
             serviceMonitorSelectorNilUsesHelmValues: false
             podMonitorSelectorNilUsesHelmValues: false
             ruleSelectorNilUsesHelmValues: false
@@ -52,6 +53,7 @@ spec:
           ingress:
             enabled: false
           alertmanagerSpec:
+            externalUrl: https://alertmanager.k8s.vicio.ovh
             replicas: 3
             secrets:
               - discord-webhook
