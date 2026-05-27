@@ -27,12 +27,9 @@ spec:
             enabled: true
           customPricing:
             enabled: true
+            createConfigmap: false
+            configmapName: opencost-hetzner-pricing
             provider: custom
-            costModel:
-              CPU: "0.00206"
-              RAM: "0.00069"
-              storage: "0.00002"
-              description: "Hetzner actual pricing: 3xCX33+3xCX43+6xIPv4+LB11 = EUR 99.54/mo"
         resources:
           requests:
             cpu: 50m
