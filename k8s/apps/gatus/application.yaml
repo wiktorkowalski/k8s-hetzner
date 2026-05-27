@@ -30,7 +30,8 @@ spec:
             memory: 256Mi
         config:
           storage:
-            type: memory
+            type: sqlite
+            path: /data/data.db
           kubernetes:
             auto-discover: true
             cluster-mode: cluster
@@ -129,6 +130,12 @@ spec:
               interval: 30s
               conditions:
                 - "[CONNECTED] == true"
+        extraVolumeMounts:
+          - name: data
+            mountPath: /data
+        extraVolumes:
+          - name: data
+            emptyDir: {}
         persistence:
           enabled: false
   destination:
