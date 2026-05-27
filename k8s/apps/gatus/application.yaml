@@ -52,6 +52,74 @@ spec:
               interval: 30s
               conditions:
                 - "[STATUS] == any(200, 401)"
+            - name: Traefik
+              group: Infrastructure
+              url: http://traefik.traefik.svc:9100/ping
+              interval: 30s
+              conditions:
+                - "[STATUS] == 200"
+            - name: ArgoCD
+              group: Admin
+              url: https://argocd-server.argocd.svc:443
+              client:
+                insecure: true
+              interval: 60s
+              conditions:
+                - "[STATUS] == 200"
+            - name: Grafana
+              group: Observability
+              url: http://kube-prometheus-stack-grafana.monitoring.svc:80/api/health
+              interval: 60s
+              conditions:
+                - "[STATUS] == 200"
+            - name: Prometheus
+              group: Observability
+              url: http://kube-prometheus-stack-prometheus.monitoring.svc:9090/-/ready
+              interval: 30s
+              conditions:
+                - "[STATUS] == 200"
+            - name: Alertmanager
+              group: Observability
+              url: http://kube-prometheus-stack-alertmanager.monitoring.svc:9093/-/ready
+              interval: 30s
+              conditions:
+                - "[STATUS] == 200"
+            - name: Loki
+              group: Observability
+              url: http://loki.monitoring.svc:3100/ready
+              interval: 30s
+              conditions:
+                - "[STATUS] == 200"
+            - name: Tempo
+              group: Observability
+              url: http://tempo.monitoring.svc:3200/ready
+              interval: 30s
+              conditions:
+                - "[STATUS] == 200"
+            - name: Headlamp
+              group: Admin
+              url: http://headlamp.headlamp.svc:80
+              interval: 60s
+              conditions:
+                - "[STATUS] == 200"
+            - name: Homepage
+              group: Admin
+              url: http://homepage.homepage.svc:80
+              interval: 60s
+              conditions:
+                - "[STATUS] == 200"
+            - name: OpenCost
+              group: Admin
+              url: http://opencost.opencost.svc:9090
+              interval: 60s
+              conditions:
+                - "[STATUS] == 200"
+            - name: pgAdmin
+              group: Databases
+              url: http://pgadmin.postgres.svc:80
+              interval: 60s
+              conditions:
+                - "[STATUS] == any(200, 302)"
             - name: pg-alpha
               group: Databases
               url: tcp://pg-alpha-rw.postgres.svc:5432
