@@ -56,18 +56,16 @@ spec:
                 - "[STATUS] == any(200, 401)"
             - name: Traefik
               group: Infrastructure
-              url: http://traefik.traefik.svc:9100/ping
+              url: http://traefik-metrics.traefik.svc:9100/ping
               interval: 30s
               conditions:
                 - "[STATUS] == 200"
             - name: ArgoCD
               group: Admin
-              url: https://argocd-server.argocd.svc:443
-              client:
-                insecure: true
+              url: http://argocd-server.argocd.svc:80
               interval: 60s
               conditions:
-                - "[STATUS] == 200"
+                - "[STATUS] == any(200, 302)"
             - name: Grafana
               group: Observability
               url: http://kube-prometheus-stack-grafana.monitoring.svc:80/api/health
