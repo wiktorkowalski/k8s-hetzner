@@ -51,6 +51,15 @@ spec:
         app: homepage
     spec:
       serviceAccountName: homepage
+      initContainers:
+        - name: copy-config
+          image: busybox:1.37
+          command: ["sh", "-c", "cp /config-ro/* /app/config/ && mkdir -p /app/config/logs"]
+          volumeMounts:
+            - name: config-ro
+              mountPath: /config-ro
+            - name: config
+              mountPath: /app/config
       containers:
         - name: homepage
           image: ghcr.io/gethomepage/homepage:v1.2.0
@@ -66,9 +75,11 @@ spec:
             limits:
               memory: 256Mi
       volumes:
-        - name: config
+        - name: config-ro
           configMap:
             name: homepage-config
+        - name: config
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
