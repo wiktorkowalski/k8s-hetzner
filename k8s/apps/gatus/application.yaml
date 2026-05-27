@@ -16,6 +16,8 @@ spec:
     helm:
       releaseName: gatus
       valuesObject:
+        deployment:
+          strategy: Recreate
         serviceAccount:
           create: true
           name: gatus
