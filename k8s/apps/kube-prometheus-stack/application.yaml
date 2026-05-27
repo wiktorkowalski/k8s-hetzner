@@ -77,6 +77,10 @@ spec:
                 - receiver: 'null'
                   matchers:
                     - alertname = "InfoInhibitor"
+                - receiver: 'null'
+                  matchers:
+                    - alertname = "ArgoCDAppOutOfSync"
+                    - name = "beyla"
             receivers:
               - name: 'null'
               - name: discord
