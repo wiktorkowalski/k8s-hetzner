@@ -85,8 +85,19 @@ spec:
                   matchers:
                     - alertname = "ArgoCDAppOutOfSync"
                     - name = "beyla"
+                # Send critical alerts to Robusta for AI investigation, then
+                # continue so they still reach the discord catch-all below.
+                - receiver: robusta
+                  matchers:
+                    - severity = "critical"
+                  continue: true
+                - receiver: discord
             receivers:
               - name: 'null'
+              - name: robusta
+                webhook_configs:
+                  - url: http://robusta-runner.robusta.svc.cluster.local/api/alerts
+                    send_resolved: true
               - name: discord
                 slack_configs:
                   - send_resolved: true

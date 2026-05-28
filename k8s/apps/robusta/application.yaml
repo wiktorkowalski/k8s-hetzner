@@ -1,0 +1,95 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: robusta
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://robusta-charts.storage.googleapis.com
+    chart: robusta
+    targetRevision: 0.31.1
+    helm:
+      releaseName: robusta
+      valuesObject:
+        clusterName: k8s-hetzner
+        # Use the existing kube-prometheus-stack, do not bundle another one
+        enablePrometheusStack: false
+        enabledManagedConfiguration: false
+        enablePlatformPlaybooks: false
+        enableServiceMonitors: true
+        globalConfig:
+          # Local identifiers only — no Robusta SaaS / cloud routing is used
+          account_id: 348a9720-64f8-4a6c-8d3e-814d0e111c85
+          signing_key: c2844c2c-cada-4c2a-ab2a-604d3c230c1c
+          prometheus_url: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+          alertmanager_url: http://kube-prometheus-stack-alertmanager.monitoring.svc:9093
+        sinksConfig:
+          - discord_sink:
+              name: discord_ai
+              url: "{{ env.DISCORD_WEBHOOK_URL }}"
+        enableHolmesGPT: true
+        holmes:
+          additionalEnvVars:
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: robusta-secrets
+                  key: openrouter-api-key
+          modelList:
+            sonnet:
+              api_key: "{{ env.OPENROUTER_API_KEY }}"
+              model: openrouter/anthropic/claude-sonnet-4.5
+              temperature: 1
+          toolsets:
+            prometheus/metrics:
+              enabled: true
+              config:
+                prometheus_url: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+          resources:
+            requests:
+              cpu: 100m
+              memory: 1Gi
+            limits:
+              memory: 2Gi
+        runner:
+          additional_env_vars:
+            - name: DISCORD_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: robusta-secrets
+                  key: discord-webhook-url
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+        # Auto-investigate alerts that reach Robusta. The Alertmanager route
+        # only forwards severity=critical here, which keeps OpenRouter spend low.
+        customPlaybooks:
+          - triggers:
+              - on_prometheus_alert: {}
+            actions:
+              - ask_holmes: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: robusta
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 5m
