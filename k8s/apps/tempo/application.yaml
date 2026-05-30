@@ -17,6 +17,12 @@ spec:
       releaseName: tempo
       valuesObject:
         tempo:
+          # Pin image tag explicitly (chart default tracks appVersion).
+          # Bumped 2.9.0 -> 2.9.1 to force a fresh pull: the old in-cluster
+          # registry mirror (removed in f46b50c) had cached a wrong-arch
+          # 2.9.0 layer on agent-hel1, causing "exec format error" crashloop.
+          image:
+            tag: "2.9.1"
           storage:
             trace:
               backend: local
