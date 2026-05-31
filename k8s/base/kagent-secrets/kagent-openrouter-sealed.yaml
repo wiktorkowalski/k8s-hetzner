@@ -1,0 +1,13 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: kagent-openrouter
+  namespace: kagent
+spec:
+  encryptedData:
+    OPENROUTER_API_KEY: AgCVx5Qo5EcQ2X4pgS0X0SeZhKK8hzddhmjRcRLxHGCmPzg9OrP8ut8rbtRJfy0Fr4LOpAlUuXL5QaRUfvvCMqcaRzyLexm5QRZQoBEqBHaM/8giSIUMT/m1J7pZqcJcEKSfXmbD90e5BNTf3qudBUYMCWcK2nGV9cEYUpcSa6g7GrXjovO2YjlY7FzlFtSp8oM2kMc2aMZO2+CugRSyN8w21R/NCqEfGFnyRNIw7aeaVq8Itgcp1brKIMeoGgKbq3ymaJz97eQJEckLrvBBzY8HcLtyJBUbYnrm0cibFvueyxN/MJKASNsOrmLJrX+pEatxuwl/fA7ecdax5+qXZ3D46+uKn/JfQASc4vgpNO2EejGHhT4Qhg35PmzAWkmzIogNoE8EVBwQvlB3ToXWHdb/8h0wTvgvv0P9j35XmQaRlDOelfkNsXWeKPzArOjb6JQg+mpj54fXD/GWje1RU5m4ct2ruJhSzQAIMKFoNR/s8FEbdmNdmSCViV00DZ4KsDdh1+pT+ngsfoN8tStAhiIMRWpI35nUzKQBgXGX3neJG1gnDyAg9lHNG5LeoucGfEU5ea7A5gtb8QLHpVpOY+CVXRitSrsDJX1mAGjX3GozdC38Ttza6isaz/maEckHjLiTJ24QgGJVjW9WO0gYx4+oTQr0eZwyvrxoSo0I6z6KmJKbFOOA0M1RsvSwhH2NrKyDi8AkfUuCwe2yg4P8uMfVU+AOeiArlLpBzl8NNL2mDjYiKKkkSp7bHiEhZii6oqFGbIZJSSgnnS5QzAPv8dbNM3Kg3AhISiir
+  template:
+    metadata:
+      name: kagent-openrouter
+      namespace: kagent

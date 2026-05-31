@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kagent
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io/kagent-dev/kagent/helm
+    chart: kagent
+    targetRevision: 0.9.4
+    helm:
+      releaseName: kagent
+      valuesObject:
+        # Point the auto-generated default-model-config at OpenRouter
+        # (OpenAI-compatible endpoint). Key comes from the kagent-openrouter
+        # SealedSecret. NOTE: the chart's modelconfig template does not pass
+        # modelInfo; if tool-calling misbehaves on the OpenRouter model name,
+        # add a hand-written ModelConfig with modelInfo.functionCalling: true
+        # and repoint the agents at it.
+        providers:
+          default: openAI
+          openAI:
+            provider: OpenAI
+            model: "anthropic/claude-sonnet-4.6"
+            apiKeySecretRef: kagent-openrouter
+            apiKeySecretKey: OPENROUTER_API_KEY
+            config:
+              baseUrl: "https://openrouter.ai/api/v1"
+        # Keep the shared tool server (k8s + prometheus MCP tools)
+        kagent-tools:
+          enabled: true
+        # Keep the general k8s troubleshooting agent + prometheus/promql agent
+        k8s-agent:
+          enabled: true
+        promql-agent:
+          enabled: true
+        # Disable the agents/components we don't need (footprint + no OpenAI dep)
+        kgateway-agent:
+          enabled: false
+        istio-agent:
+          enabled: false
+        observability-agent:
+          enabled: false
+        argo-rollouts-agent:
+          enabled: false
+        helm-agent:
+          enabled: false
+        cilium-policy-agent:
+          enabled: false
+        cilium-manager-agent:
+          enabled: false
+        cilium-debug-agent:
+          enabled: false
+        grafana-mcp:
+          enabled: false
+        querydoc:
+          enabled: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kagent
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 5m

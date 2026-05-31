@@ -1,0 +1,33 @@
+# Home-IP allowlist middleware for the kagent namespace (admin UI).
+# Mirrors the homeonly middleware used by ArgoCD/Grafana/Headlamp/etc.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: homeonly
+  namespace: kagent
+spec:
+  ipAllowList:
+    sourceRange:
+      - 185.14.151.136/32
+      - 87.205.23.9/32
+---
+# kagent dashboard, restricted to home IPs, at https://kagent.k8s.vicio.ovh
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kagent
+  namespace: kagent
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`kagent.k8s.vicio.ovh`)
+      kind: Rule
+      middlewares:
+        - name: homeonly
+          namespace: kagent
+      services:
+        # kagent UI service exposes port 8080 (verified from the chart)
+        - name: kagent-ui
+          port: 8080
+  tls: {}
