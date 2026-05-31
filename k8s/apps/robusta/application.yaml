@@ -75,10 +75,16 @@ spec:
           - triggers:
               - on_prometheus_alert: {}
             actions:
-              # investigation_type is a required param on ask_holmes; "issue"
-              # is the alert-driven mode ("analyze_problems" is proactive scan).
+              # ask_holmes (robusta 0.31.1) needs: investigation_type ("issue"
+              # = alert-driven mode) AND a non-None context dict — both
+              # build_investigation_title and add_labels_to_ask call
+              # params.context.get(...) unguarded and crash on the default None.
+              # issue_type sets the Finding title; Holmes investigates the
+              # resource auto-resolved from the alert's pod/namespace labels.
               - ask_holmes:
                   investigation_type: issue
+                  context:
+                    issue_type: "Critical Prometheus alert"
   destination:
     server: https://kubernetes.default.svc
     namespace: robusta
