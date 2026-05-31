@@ -80,6 +80,9 @@ spec:
               routes:
                 - receiver: 'null'
                   matchers:
+                    - alertname = "Watchdog"
+                - receiver: 'null'
+                  matchers:
                     - alertname = "InfoInhibitor"
                 - receiver: 'null'
                   matchers:
