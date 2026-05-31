@@ -75,7 +75,10 @@ spec:
           - triggers:
               - on_prometheus_alert: {}
             actions:
-              - ask_holmes: {}
+              # investigation_type is a required param on ask_holmes; "issue"
+              # is the alert-driven mode ("analyze_problems" is proactive scan).
+              - ask_holmes:
+                  investigation_type: issue
   destination:
     server: https://kubernetes.default.svc
     namespace: robusta
