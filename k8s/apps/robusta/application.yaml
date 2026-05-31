@@ -43,7 +43,7 @@ spec:
           modelList:
             sonnet:
               api_key: "{{ env.OPENROUTER_API_KEY }}"
-              model: openrouter/anthropic/claude-sonnet-4.5
+              model: openrouter/anthropic/claude-sonnet-4.6
               temperature: 1
           toolsets:
             prometheus/metrics:
