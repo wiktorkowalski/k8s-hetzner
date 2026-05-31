@@ -31,9 +31,15 @@ spec:
             apiKeySecretKey: OPENROUTER_API_KEY
             config:
               baseUrl: "https://openrouter.ai/api/v1"
-        # Keep the shared tool server (k8s + prometheus MCP tools)
+        # Keep the shared tool server (k8s + prometheus MCP tools), but scope
+        # it to READ-ONLY RBAC (get/list/watch, no secrets) — the agent
+        # investigates and recommends; it cannot mutate/delete/exec. Keeps the
+        # cluster everything-in-git / ArgoCD-managed. The k8s-agent still ships
+        # mutate tools, but they 403 against this read-only role.
         kagent-tools:
           enabled: true
+          rbac:
+            readOnly: true
         # Keep the general k8s troubleshooting agent + prometheus/promql agent
         k8s-agent:
           enabled: true
