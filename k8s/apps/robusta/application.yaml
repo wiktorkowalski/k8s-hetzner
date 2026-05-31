@@ -69,22 +69,13 @@ spec:
               memory: 512Mi
             limits:
               memory: 1Gi
-        # Auto-investigate alerts that reach Robusta. The Alertmanager route
-        # only forwards severity=critical here, which keeps OpenRouter spend low.
-        customPlaybooks:
-          - triggers:
-              - on_prometheus_alert: {}
-            actions:
-              # ask_holmes (robusta 0.31.1) needs: investigation_type ("issue"
-              # = alert-driven mode) AND a non-None context dict — both
-              # build_investigation_title and add_labels_to_ask call
-              # params.context.get(...) unguarded and crash on the default None.
-              # issue_type sets the Finding title; Holmes investigates the
-              # resource auto-resolved from the alert's pod/namespace labels.
-              - ask_holmes:
-                  investigation_type: issue
-                  context:
-                    issue_type: "Critical Prometheus alert"
+        # NOTE: No ask_holmes customPlaybook. Robusta's Discord sink cannot
+        # render HolmesGPT's AI result block (only the Slack sink and the
+        # Robusta UI sink can), so auto-investigation-to-Discord produced a
+        # title-only message with no analysis. AI investigation is done
+        # on-demand via the standalone Holmes CLI instead (`holmes ask` /
+        # `holmes investigate alertmanager`). Robusta still enriches alerts
+        # with logs/events/OOM context, which DO render in Discord.
   destination:
     server: https://kubernetes.default.svc
     namespace: robusta
