@@ -18,6 +18,17 @@ spec:
       valuesObject:
         trivy:
           ignoreUnfixed: true
+          # Scan-job (client) resources. Chart default limit 500M OOMs while
+          # analysing large images (cilium) even in ClientServer mode — the
+          # client still unpacks/secret-scans every layer. Bump the limit;
+          # requests stay low so the many small scan containers don't reserve.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100M
+            limits:
+              cpu: 500m
+              memory: 1Gi
         serviceMonitor:
           enabled: true
         operator:
