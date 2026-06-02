@@ -24,6 +24,13 @@ spec:
           scanJobsConcurrentLimit: 2
           vulnerabilityScannerScanOnlyCurrentRevisions: true
           metricsVulnIdEnabled: true
+          # ClientServer mode: scan jobs become thin clients of a central
+          # trivy-server (StatefulSet + 5Gi PVC, Service trivy-service:4954).
+          # Fixes (1) scan-job OOMKills — clients no longer load the vuln DB,
+          # and (2) fs-cache-lock timeouts on multi-container workloads (cilium,
+          # grafana, opencost, longhorn) that contended on the shared cache.
+          # This flag auto-sets trivy.mode=ClientServer + trivy.serverURL.
+          builtInTrivyServer: true
         resources:
           requests:
             cpu: 50m
