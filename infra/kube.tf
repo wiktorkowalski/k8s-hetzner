@@ -79,8 +79,11 @@ module "kube-hetzner" {
     },
   ]
 
-  # Combine CP+worker on the same nodes
-  allow_scheduling_on_control_plane = true
+  # Control planes are dedicated (cx23, ~80GB root). Tainting them control-plane:NoSchedule
+  # keeps workloads + Longhorn default disks off them — Longhorn storage lives on the 3 cx43
+  # agents (one replica per DC). Previously `true`, which let a Longhorn replica fill cp-nbg1's
+  # root disk → DiskPressure eviction storm (2026-06-04).
+  allow_scheduling_on_control_plane = false
 
   load_balancer_type     = "lb11"
   load_balancer_location = "fsn1"

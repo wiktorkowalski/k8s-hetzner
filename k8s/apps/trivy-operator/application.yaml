@@ -18,12 +18,30 @@ spec:
       valuesObject:
         trivy:
           ignoreUnfixed: true
+          # Scan-job (client) resources. Chart default limit 500M OOMs while
+          # analysing large images (cilium) even in ClientServer mode — the
+          # client still unpacks/secret-scans every layer. Bump the limit;
+          # requests stay low so the many small scan containers don't reserve.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100M
+            limits:
+              cpu: 500m
+              memory: 1Gi
         serviceMonitor:
           enabled: true
         operator:
           scanJobsConcurrentLimit: 2
           vulnerabilityScannerScanOnlyCurrentRevisions: true
           metricsVulnIdEnabled: true
+          # ClientServer mode: scan jobs become thin clients of a central
+          # trivy-server (StatefulSet + 5Gi PVC, Service trivy-service:4954).
+          # Fixes (1) scan-job OOMKills — clients no longer load the vuln DB,
+          # and (2) fs-cache-lock timeouts on multi-container workloads (cilium,
+          # grafana, opencost, longhorn) that contended on the shared cache.
+          # This flag auto-sets trivy.mode=ClientServer + trivy.serverURL.
+          builtInTrivyServer: true
         resources:
           requests:
             cpu: 50m
