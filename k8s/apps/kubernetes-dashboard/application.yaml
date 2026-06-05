@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubernetes-dashboard
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://kubernetes.github.io/dashboard/
+      chart: kubernetes-dashboard
+      targetRevision: 7.14.0
+      helm:
+        releaseName: kubernetes-dashboard
+        valuesObject:
+          # Reuse existing cluster infra — never let the chart bundle its own.
+          # All four default to false in 7.14.0; pinned explicitly so a future
+          # chart default-flip can't silently install a second metrics-server
+          # (would clobber the v1beta1.metrics.k8s.io APIService cluster-wide).
+          app:
+            ingress:
+              enabled: false # exposed via Traefik IngressRoute in k8s/base
+          nginx:
+            enabled: false
+          cert-manager:
+            enabled: false
+          metrics-server:
+            enabled: false
+    - repoURL: https://github.com/wiktorkowalski/k8s-hetzner.git
+      targetRevision: master
+      path: k8s/base/kubernetes-dashboard
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kubernetes-dashboard
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 5m
