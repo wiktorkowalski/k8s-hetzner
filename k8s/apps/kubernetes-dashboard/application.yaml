@@ -10,7 +10,12 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://kubernetes.github.io/dashboard/
+    # Upstream Helm repo https://kubernetes.github.io/dashboard/ is dead — the
+    # project's GitHub Pages serving 404s (gh-pages branch index.yaml is intact,
+    # only Pages deployment is broken). Point straight at the raw gh-pages
+    # index, which serves the same index.yaml + absolute release-asset chart URLs
+    # and doesn't depend on Pages being up.
+    - repoURL: https://raw.githubusercontent.com/kubernetes/dashboard/gh-pages
       chart: kubernetes-dashboard
       targetRevision: 7.14.0
       helm:
