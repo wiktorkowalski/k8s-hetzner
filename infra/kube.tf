@@ -17,6 +17,14 @@ module "kube-hetzner" {
   # Pin k3s minor channel so module defaults don't drift
   initial_k3s_channel = "v1.35"
 
+  # Pin the exact k3s version (supersedes the channel for the system-upgrade plans).
+  # The v1.35 channel endpoint on update.k3s.io intermittently serves the older v1.35.5+k3s1
+  # (~2/12 requests observed 2026-06-26). system-upgrade-controller has no downgrade guard, so
+  # each stale read cordoned a control plane and spawned a doomed downgrade job, leaving CPs
+  # cordoned. Pinning the version stops the controller polling the channel entirely.
+  # Bump this manually for future k3s upgrades.
+  install_k3s_version = "v1.35.6+k3s1"
+
   # 3 cx33 control planes — one per DC for geo-HA + etcd quorum.
   # cx33 (4 vCPU / 8 GB / 80 GB) needed for CP + DaemonSet monitoring (Alloy, Beyla, node-exporter).
   # cx23 (4 GB) OOM'd with the full observability stack.
@@ -158,12 +166,19 @@ module "kube-hetzner" {
   # ed25519 key-only auth (no passwords) so brute force is impractical.
   firewall_kube_api_source = var.management_cidrs
 
-  # Traefik: JSON access logs + OTLP tracing to Tempo
+  # Pin the Traefik helm chart. Unpinned (module default ""), the k3s helm-controller pulls
+  # the latest chart on every reconcile. Chart 41.0.0 removed the top-level `logs:` key
+  # (split into `log:` + `accessLog:`), so the old values failed schema validation and the
+  # helm-install-traefik job crashlooped. Pin + new schema keeps reconciles green.
+  traefik_version = "41.0.0"
+
+  # Traefik: JSON access logs + OTLP tracing to Tempo (chart 41.x schema)
   traefik_merge_values = <<-EOT
-    logs:
-      access:
-        enabled: true
-        format: json
+    log:
+      level: INFO
+    accessLog:
+      enabled: true
+      format: json
     ports:
       postgres:
         port: 5432
