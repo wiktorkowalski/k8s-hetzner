@@ -137,9 +137,11 @@ module "kube-hetzner" {
   EOT
 
   enable_longhorn     = true
+  longhorn_version    = "1.12.0" # PIN: unpinned HelmChart floats at "*" and auto-upgrades to latest on any helm-install re-run (terraform apply / CP reboot) — same class that broke Traefik 2026-06-26. Longhorn forbids version skips.
   disable_hetzner_csi = true
 
   enable_cert_manager   = true
+  cert_manager_version  = "v1.20.3" # PIN: same reason — a floating latest-pull with a breaking CRD stops wildcard *.k8s.vicio.ovh renewal.
   enable_metrics_server = true
   enable_rancher        = false
 
