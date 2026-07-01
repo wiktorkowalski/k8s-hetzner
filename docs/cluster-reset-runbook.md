@@ -355,6 +355,26 @@ hcloud load-balancer describe 5139082 -o format='{{.PublicNet.IPv4.IP}}'
 dig +short k8s.<your-domain>                   # 128.140.28.152
 ```
 
+## Phase 7.5 — Post-bootstrap manual steps (not captured by GitOps)
+
+Some cluster state is owned by k3s addons or the module, not by git/ArgoCD,
+so it reverts to defaults on a fresh reset. Re-apply after Phase 7 is green.
+
+### 7.5.1 Scale CoreDNS
+
+CoreDNS is a k3s addon (`objectset.rio.cattle.io/owner-name: coredns`);
+kube-hetzner exposes no replica variable, so a rebuild drops it to the k3s
+default. Scale to one replica per node so cluster DNS isn't a SPOF:
+
+```
+kubectl -n kube-system scale deploy coredns --replicas=6   # = node count
+kubectl -n kube-system get pods -l k8s-app=kube-dns -o wide  # verify spread across nodes
+```
+
+(Sealed-secrets reseal is covered in the project `CLAUDE.md`. The Beyla
+`ArgoCDAppOutOfSync` alert mute is already declared in git via the
+kube-prometheus-stack null-route — no manual step needed.)
+
 ## Phase 8 — GH Actions cleanup
 
 Now that ArgoCD owns app deployment, simplify CI.
