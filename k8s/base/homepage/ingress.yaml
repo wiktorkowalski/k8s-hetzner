@@ -25,5 +25,4 @@ spec:
       services:
         - name: homepage
           port: 80
-  tls:
-    secretName: wildcard-k8s-vicio-ovh-tls
+  tls: {} # default TLSStore (wildcard-k8s-vicio-ovh-tls in traefik ns) — no per-ns secret needed
