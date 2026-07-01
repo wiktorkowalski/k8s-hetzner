@@ -34,6 +34,7 @@ spec:
             podMonitorSelectorNilUsesHelmValues: false
             ruleSelectorNilUsesHelmValues: false
             retention: 90d
+            retentionSize: 42GiB # size cap so the 50Gi PVC can't fill before 90d time-retention ever triggers (data is only ~38d old, grows ~1GiB/day → would fill ~2026-07-13 without this)
             metricRelabelings:
               - sourceLabels: [__name__]
                 regex: 'etcd_request_duration_seconds_bucket|apiserver_request_sli_duration_seconds_bucket|apiserver_request_body_size_bytes_bucket|apiserver_watch_list_duration_seconds_bucket|apiserver_watch_cache_read_wait_seconds_bucket|apiserver_response_sizes_bucket|apiserver_watch_events_sizes_bucket'
