@@ -24,9 +24,9 @@ Raw K8s manifests go in `k8s/base/` and are referenced by an Application via `so
 
 ## Cluster topology
 
-- 3 control planes (cx23) — fsn1, nbg1, hel1. Not for workloads.
+- 3 control planes (cx33, 4 vCPU / 8 GB) — fsn1, nbg1, hel1. Not for workloads. (cx23/4GB OOM'd with the observability DaemonSets, upsized.)
 - 3 agents (cx43, 8 vCPU / 16 GB) — fsn1, nbg1, hel1. All workloads here.
-- OS: openSUSE MicroOS, kernel 7.0.9-1-default
+- OS: openSUSE MicroOS, kernel 7.0.12-1-default (was 7.0.9 when Beyla panicked; auto-upgrades via automatically_upgrade_os)
 - CNI: Cilium 1.17 with Hubble
 - Storage: Longhorn, 3 replicas across DCs
 - Ingress: Traefik v3.7 behind Hetzner LB, PROXY protocol enabled
