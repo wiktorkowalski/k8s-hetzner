@@ -1,9 +1,11 @@
 # Expose the kube API over the existing LB port 443 via TLS SNI passthrough.
 # Purpose: Claude cloud sandboxes (and other HTTPS-proxy-only environments) cannot
 # open raw TCP (SSH) or reach 6443 (home-IP firewall); they CAN CONNECT to 443.
-# kubectl connects to kubeapi.k8s.vicio.ovh:443 (wildcard DNS -> LB) with
-# tls-server-name api.k8s.vicio.ovh, so the SNI matches here and Traefik forwards
-# the raw TLS stream to the apiserver — client-cert auth is preserved end-to-end,
+# kubectl connects to https://kubeapi.k8s.vicio.ovh:443 (wildcard DNS -> LB); the
+# SNI must equal the hostname because Anthropic's egress proxy resets TLS when
+# SNI != CONNECT host (anti-domain-fronting) — hence kubeapi.* is also in the
+# apiserver cert SANs (infra/kube.tf additional_tls_sans). Traefik forwards the
+# raw TLS stream to the apiserver — client-cert auth is preserved end-to-end,
 # Traefik never terminates. In default namespace because the traefik chart runs
 # with allowCrossNamespace=false and the `kubernetes` Service lives here.
 apiVersion: traefik.io/v1alpha1
@@ -15,7 +17,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: HostSNI(`api.k8s.vicio.ovh`)
+    - match: HostSNI(`kubeapi.k8s.vicio.ovh`)
       services:
         - name: kubernetes
           port: 443

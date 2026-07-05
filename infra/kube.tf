@@ -106,7 +106,14 @@ module "kube-hetzner" {
   # DNS round-robin API HA: api.k8s.vicio.ovh resolves to all 3 CP IPs.
   # Kubeconfig uses this hostname instead of a single CP IP, so kubectl
   # survives any single CP failure (no health checks though).
-  additional_tls_sans       = ["api.${var.cluster_subdomain}.${var.domain}"]
+  # kubeapi.k8s.vicio.ovh: kube API via LB 443 SNI passthrough (Claude cloud
+  # sandboxes). SAN needed so kubectl can use the LB hostname directly —
+  # Anthropic's egress proxy resets TLS when SNI != CONNECT host (anti-fronting),
+  # so a tls-server-name override is not an option.
+  additional_tls_sans = [
+    "api.${var.cluster_subdomain}.${var.domain}",
+    "kubeapi.${var.cluster_subdomain}.${var.domain}",
+  ]
   kubeconfig_server_address = "api.${var.cluster_subdomain}.${var.domain}"
 
   enable_delete_protection = {

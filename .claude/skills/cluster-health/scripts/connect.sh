@@ -56,16 +56,10 @@ fi
 
 # --- mode 2: LB 443 SNI passthrough (kubectl honors HTTPS_PROXY automatically) ---
 if [ -n "$KC" ]; then
+  # No tls-server-name override: kubeapi.* is in the apiserver cert SANs, and the
+  # Anthropic egress proxy resets TLS when SNI != CONNECT host (anti-fronting).
   LKC="$WORKDIR/kubeconfig-lb"
-  python3 - "$KC" "$LKC" <<PYEOF
-import re, sys
-src, dst = sys.argv[1], sys.argv[2]
-text = open(src).read()
-text = re.sub(r'( *)server: https://\S+',
-              r'\g<1>server: https://${LB_HOST}:443\n\g<1>tls-server-name: ${API_HOST}',
-              text)
-open(dst, 'w').write(text)
-PYEOF
+  sed "s|server: https://[^[:space:]]*|server: https://${LB_HOST}:443|" "$KC" > "$LKC"
   chmod 600 "$LKC"
   if KUBECONFIG="$LKC" kubectl get --raw /readyz --request-timeout=10s >/dev/null 2>&1; then
     log "API access via LB 443 SNI passthrough OK"
