@@ -11,6 +11,12 @@ module "kube-hetzner" {
   ssh_public_key  = var.ssh_public_key
   ssh_private_key = var.ssh_private_key
 
+  # Dedicated key for remote cluster-health checks from Claude cloud envs
+  # (.claude/skills/cluster-health). Revocable independently of the main key.
+  ssh_additional_public_keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPhUbOHYUj4v9vHlDFZKOSW8YijDlEUrR0tl/Jy+/gVr claude-cloud-cluster-health",
+  ]
+
   network_region = var.network_region
   cluster_name   = var.cluster_name
 
