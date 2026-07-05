@@ -21,6 +21,14 @@ eval "$(bash .claude/skills/cluster-health/scripts/connect.sh)"
 kubectl get nodes   # sanity — works identically in all modes
 ```
 
+> **Web/cloud sessions run each Bash call in a fresh shell — exported env does NOT
+> persist between commands.** `connect.sh` writes its kubeconfig to a stable path and
+> prints the `export` line on stdout (e.g. `export KUBECONFIG=/tmp/cluster-health/kubeconfig-lb`;
+> SSH mode prints an `export PATH=…` shim instead). After connecting once, prepend that
+> exact same `export …` line to every later command instead of re-running the full eval —
+> re-running re-probes the API over the network each time. Only re-run the eval if a
+> command starts failing with `connection refused` / `localhost:8080` (workdir wiped).
+
 ## Access failures are REPORT-ONLY — never fix the access path
 
 If the connect script fails, SSH errors out, the API times out, or kubectl itself
