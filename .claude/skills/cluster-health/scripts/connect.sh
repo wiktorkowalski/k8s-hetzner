@@ -29,6 +29,18 @@ chmod 700 "$WORKDIR"
 
 log() { echo "[connect] $*" >&2; }
 
+# Make bare `kubectl` work in FRESH shells too (web/cloud harnesses spawn one per
+# command): install the winning kubeconfig as ~/.kube/config if none exists.
+# Never overwrites an existing file (e.g. the real one on the home machine).
+persist_kubeconfig() { # $1 = winning kubeconfig path
+  if [ ! -e "$HOME/.kube/config" ] && mkdir -p "$HOME/.kube" 2>/dev/null \
+     && cp "$1" "$HOME/.kube/config" 2>/dev/null; then
+    chmod 600 "$HOME/.kube/config"
+    log "installed as ~/.kube/config — bare kubectl works in fresh shells"
+  fi
+  echo "export KUBECONFIG=$1"
+}
+
 # --- locate kubeconfig (optional; required for modes 1+2) ---
 KC=""
 if [ -n "${KUBECONFIG_B64:-}" ]; then
@@ -50,7 +62,7 @@ fi
 # --- mode 1: direct ---
 if [ -n "$KC" ] && KUBECONFIG="$KC" kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
   log "direct API access OK"
-  echo "export KUBECONFIG=$KC"
+  persist_kubeconfig "$KC"
   exit 0
 fi
 
@@ -63,7 +75,7 @@ if [ -n "$KC" ]; then
   chmod 600 "$LKC"
   if KUBECONFIG="$LKC" kubectl get --raw /readyz --request-timeout=10s >/dev/null 2>&1; then
     log "API access via LB 443 SNI passthrough OK"
-    echo "export KUBECONFIG=$LKC"
+    persist_kubeconfig "$LKC"
     exit 0
   fi
   log "LB 443 path failed — falling back to SSH"
@@ -109,6 +121,16 @@ chmod 755 "$WORKDIR/bin/kubectl"
 
 if "$WORKDIR/bin/kubectl" get --raw /readyz --request-timeout=10s >/dev/null 2>&1; then
   log "kubectl-over-SSH OK (port-forward unavailable; use the API service proxy)"
+  # Make bare `kubectl` work in fresh shells: install the wrapper on the PATH.
+  # Only when no real kubectl exists — never shadow a real binary.
+  if ! command -v kubectl >/dev/null 2>&1; then
+    for dir in /usr/local/bin "$HOME/.local/bin"; do
+      if [ -d "$dir" ] && [ -w "$dir" ] && cp "$WORKDIR/bin/kubectl" "$dir/kubectl" 2>/dev/null; then
+        log "installed wrapper as $dir/kubectl — bare kubectl works in fresh shells"
+        break
+      fi
+    done
+  fi
   echo "export PATH=$WORKDIR/bin:\$PATH"
 else
   log "ERROR: SSH works but 'k3s kubectl' on the CP failed"

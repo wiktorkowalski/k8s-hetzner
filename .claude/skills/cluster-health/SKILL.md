@@ -22,12 +22,13 @@ kubectl get nodes   # sanity — works identically in all modes
 ```
 
 > **Web/cloud sessions run each Bash call in a fresh shell — exported env does NOT
-> persist between commands.** `connect.sh` writes its kubeconfig to a stable path and
-> prints the `export` line on stdout (e.g. `export KUBECONFIG=/tmp/cluster-health/kubeconfig-lb`;
-> SSH mode prints an `export PATH=…` shim instead). After connecting once, prepend that
-> exact same `export …` line to every later command instead of re-running the full eval —
-> re-running re-probes the API over the network each time. Only re-run the eval if a
-> command starts failing with `connection refused` / `localhost:8080` (workdir wiped).
+> persist between commands.** connect.sh handles this: it installs the winning
+> kubeconfig as `~/.kube/config` (kubeconfig modes) or the SSH wrapper as
+> `/usr/local/bin/kubectl` / `~/.local/bin/kubectl` (SSH mode) when those spots are
+> free, so **bare `kubectl` keeps working in later commands with no eval**. It never
+> overwrites an existing file. If it logged no "installed …" line, fall back to
+> prepending the printed `export …` line to each command. If kubectl starts failing
+> with `connection refused` / `localhost:8080`, re-run the full eval once.
 
 ## Access failures are REPORT-ONLY — never fix the access path
 
