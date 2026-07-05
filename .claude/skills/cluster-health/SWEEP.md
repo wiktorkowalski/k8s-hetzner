@@ -34,4 +34,7 @@ kubectl get --raw "/api/v1/namespaces/monitoring/services/kube-prometheus-stack-
 
 Expected noise (don't report as findings): the `Watchdog` alert always fires by
 design; `beyla` app is intentionally OutOfSync (auto-sync disabled, must stay so);
-trivy scan jobs for cilium + grafana images fail (known, unfixed).
+trivy scan jobs for cilium + grafana images fail (known, unfixed); Prometheus PVC
+sits at ~84-85% forever (retentionSize 42GiB cap on a 50Gi volume — only worry
+above ~90%); DaemonSet restart counts jump in unison every Saturday 3-6am Warsaw
+(kured OS-upgrade reboot window — verify via node_boot_time_seconds if unsure).
