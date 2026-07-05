@@ -51,27 +51,31 @@ kubectl delete pods -A --field-selector=status.phase=Failed
 
 ## Remote environment setup (one-time, for the user)
 
-One secret is required in any remote env (Claude Code cloud / another machine):
+Access modes (connect.sh tries them in order):
 
-- `CLUSTER_SSH_KEY_B64` — `base64 < <path-to-cluster-ssh-private-key>` (the key whose
-  content is `ssh_private_key` in `infra/terraform.tfvars`)
+1. **direct** (6443) — home IP only
+2. **lb-https** (LB 443, TLS SNI passthrough → apiserver) — works from Claude cloud
+   sandboxes, whose egress is HTTPS-proxy-only; raw TCP (SSH) can NEVER work there
+3. **ssh** (`k3s kubectl` on a CP over port 22) — laptops/VPS without kubeconfig
 
-Optional: `KUBECONFIG_B64` (`cd infra && terraform output -raw kubeconfig | base64`) —
-only used for the direct path when the env's egress IP is allowlisted; otherwise ignored.
+**Claude cloud environment** (claude.ai → Code → environment settings):
 
-Cloud env **Setup script** (the sandbox image has no ssh client or kubectl; the SSH
-mode only needs the ssh client):
+- Env var `KUBECONFIG_B64` — `cd infra && terraform output -raw kubeconfig | base64`
+  (no dedicated secrets store exists in cloud envs; env vars are the documented way)
+- Network access: **Full** (or Custom incl. `kubeapi.k8s.vicio.ovh` + `dl.k8s.io`)
+- Setup script (sandbox image has no kubectl):
 
 ```bash
 #!/bin/bash
-# ssh client for cluster-health. update is best-effort: the sandbox image carries
-# unrelated PPAs (e.g. ondrej/php) whose metadata changes make a strict update exit 100.
-command -v ssh >/dev/null && exit 0
+command -v kubectl >/dev/null && exit 0
 SUDO=""; [ "$(id -u)" != "0" ] && SUDO=sudo
-$SUDO apt-get update --allow-releaseinfo-change -qq || true
-$SUDO apt-get install -y -qq openssh-client
+curl -fsSLo /tmp/kubectl https://dl.k8s.io/release/v1.35.6/bin/linux/amd64/kubectl
+$SUDO install -m 0755 /tmp/kubectl /usr/local/bin/kubectl
 ```
 
-Network egress to `api.k8s.vicio.ovh` port 22 must be allowed. After a cluster rebuild,
-regenerate `scripts/known_hosts` (command in the connect.sh header) and re-derive the key
-if it changed.
+**Other machines (laptop/VPS)**: either `KUBECONFIG_B64`/`~/.kube/config` (modes 1+2),
+or `CLUSTER_SSH_KEY_B64` — base64 of the dedicated key (`~/.ssh/k8s-remote-health`,
+authorized on nodes as `claude-cloud-cluster-health`) for SSH mode.
+
+After a cluster rebuild: regenerate `scripts/known_hosts` (command in connect.sh
+header), refresh `KUBECONFIG_B64`, re-add the dedicated pubkey if node keys changed.

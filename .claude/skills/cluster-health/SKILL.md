@@ -5,8 +5,10 @@ description: Diagnose and fix the k8s-hetzner cluster (k3s on Hetzner) from anyw
 
 # Cluster Health
 
-Diagnose-and-fix loop for the k3s cluster (`api.k8s.vicio.ovh`). Works from the home
-network (direct kubectl) or any remote env (kubectl-over-SSH via a control plane).
+Diagnose-and-fix loop for the k3s cluster (`api.k8s.vicio.ovh`). Three access modes,
+auto-selected by the connect script: direct 6443 (home IP), HTTPS via LB 443 SNI
+passthrough (Claude cloud sandboxes — their egress is HTTPS-only, SSH can never work
+there), and kubectl-over-SSH on a control plane (laptops without kubeconfig).
 
 Load the other files only when you reach that step:
 - [SWEEP.md](SWEEP.md) — the sweep command list (step 2)
@@ -16,7 +18,7 @@ Load the other files only when you reach that step:
 
 ```bash
 eval "$(bash .claude/skills/cluster-health/scripts/connect.sh)"
-kubectl get nodes   # sanity — works identically in both modes
+kubectl get nodes   # sanity — works identically in all modes
 ```
 
 ## Access failures are REPORT-ONLY — never fix the access path

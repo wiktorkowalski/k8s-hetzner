@@ -1,25 +1,27 @@
 #!/usr/bin/env bash
-# Establish kubectl access to the k8s-hetzner cluster from anywhere.
-# 1. Tries direct API access (works from home IP / local machine).
-# 2. Falls back to running `k3s kubectl` ON a control plane over SSH (port 22 is open
-#    worldwide, key-only). sshd on the nodes has TCP forwarding disabled, so a tunnel
-#    is not possible — instead a local `kubectl` wrapper execs every command remotely.
-#    In this mode `kubectl port-forward` does NOT work; use the API service proxy
-#    (kubectl get --raw '/api/v1/namespaces/<ns>/services/<svc>:<port>/proxy/...').
+# Establish kubectl access to the k8s-hetzner cluster from anywhere. Tries in order:
+#   1. direct    — kube API 6443 (works from home IP / allowlisted egress)
+#   2. lb-https  — kube API via LB 443 TLS-SNI passthrough (works from HTTPS-proxy-only
+#                  envs like Claude cloud sandboxes; kubectl honors HTTPS_PROXY)
+#   3. ssh       — run `k3s kubectl` ON a control plane over SSH 22 (laptops without
+#                  kubeconfig; impossible in Claude cloud sandboxes: no raw TCP egress)
 #
-# Usage:  eval "$(bash scripts/connect.sh)"     — then plain `kubectl` works either way.
+# Usage:  eval "$(bash scripts/connect.sh)"   — then plain `kubectl` works in any mode.
 #
 # Inputs (remote env):
-#   CLUSTER_SSH_KEY_B64  base64 of the cluster SSH private key (the ssh_private_key
-#                        from infra/terraform.tfvars). Optional if a default key works.
-#   KUBECONFIG_B64       base64 of kubeconfig — only needed for the direct path.
+#   KUBECONFIG_B64       base64 of kubeconfig (terraform output -raw kubeconfig | base64).
+#                        Required for modes 1+2.
+#   CLUSTER_SSH_KEY_B64  base64 of the dedicated SSH private key (mode 3 only).
 #
-# Host keys of the 3 CPs are pinned in scripts/known_hosts (api.k8s.vicio.ovh is
-# round-robin DNS). After a cluster rebuild regenerate it:
+# Modes 1+2 need a kubectl binary; mode 3 only needs ssh. Cloud sandbox setup script
+# (installs kubectl): see REFERENCE.md "Remote environment setup".
+# CP host keys pinned in scripts/known_hosts (round-robin DNS). After a cluster
+# rebuild regenerate it:
 #   for ip in <cp-ips>; do ssh-keyscan -t ed25519 $ip | sed "s/^$ip/api.k8s.vicio.ovh/"; done
 set -euo pipefail
 
 API_HOST="api.k8s.vicio.ovh"
+LB_HOST="kubeapi.k8s.vicio.ovh"   # wildcard *.k8s.vicio.ovh -> Hetzner LB
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKDIR="${CLUSTER_HEALTH_DIR:-${TMPDIR:-/tmp}/cluster-health}"
 mkdir -p "$WORKDIR/bin"
@@ -27,7 +29,7 @@ chmod 700 "$WORKDIR"
 
 log() { echo "[connect] $*" >&2; }
 
-# --- direct access, if a kubeconfig is available ---
+# --- locate kubeconfig (optional; required for modes 1+2) ---
 KC=""
 if [ -n "${KUBECONFIG_B64:-}" ]; then
   KC="$WORKDIR/kubeconfig"
@@ -39,21 +41,49 @@ elif [ -f "$HOME/.kube/config" ]; then
   KC="$HOME/.kube/config"
 fi
 
+if [ -n "$KC" ] && ! command -v kubectl >/dev/null 2>&1; then
+  log "ERROR: kubeconfig found but no kubectl binary. Add the Setup script from"
+  log "REFERENCE.md (remote environment setup), or install kubectl now."
+  exit 1
+fi
+
+# --- mode 1: direct ---
 if [ -n "$KC" ] && KUBECONFIG="$KC" kubectl get --raw /readyz --request-timeout=5s >/dev/null 2>&1; then
   log "direct API access OK"
   echo "export KUBECONFIG=$KC"
   exit 0
 fi
-log "no direct API access (expected outside home IP) — using kubectl-over-SSH via $API_HOST"
 
+# --- mode 2: LB 443 SNI passthrough (kubectl honors HTTPS_PROXY automatically) ---
+if [ -n "$KC" ]; then
+  LKC="$WORKDIR/kubeconfig-lb"
+  python3 - "$KC" "$LKC" <<PYEOF
+import re, sys
+src, dst = sys.argv[1], sys.argv[2]
+text = open(src).read()
+text = re.sub(r'( *)server: https://\S+',
+              r'\g<1>server: https://${LB_HOST}:443\n\g<1>tls-server-name: ${API_HOST}',
+              text)
+open(dst, 'w').write(text)
+PYEOF
+  chmod 600 "$LKC"
+  if KUBECONFIG="$LKC" kubectl get --raw /readyz --request-timeout=10s >/dev/null 2>&1; then
+    log "API access via LB 443 SNI passthrough OK"
+    echo "export KUBECONFIG=$LKC"
+    exit 0
+  fi
+  log "LB 443 path failed — falling back to SSH"
+else
+  log "no kubeconfig (set KUBECONFIG_B64) — trying SSH mode"
+fi
+
+# --- mode 3: kubectl-over-SSH via a control plane ---
 if ! command -v ssh >/dev/null 2>&1; then
-  log "ERROR: no ssh client in this environment. Add the Setup script from REFERENCE.md"
-  log "(remote environment setup section), or run now:"
-  log "  sudo apt-get update --allow-releaseinfo-change -qq; sudo apt-get install -y openssh-client"
+  log "ERROR: no working access path. Direct/LB need KUBECONFIG_B64 + kubectl;"
+  log "SSH mode needs an ssh client (impossible in Claude cloud sandboxes — no raw TCP)."
   exit 1
 fi
 
-# --- ssh setup ---
 SSH_KEY_OPT=""
 if [ -n "${CLUSTER_SSH_KEY_B64:-}" ]; then
   KEY="$WORKDIR/ssh-key"
@@ -69,12 +99,12 @@ SSH_OPTS="$SSH_KEY_OPT -o BatchMode=yes -o ConnectTimeout=10 \
 if ! ssh $SSH_OPTS "root@$API_HOST" true 2>"$WORKDIR/ssh-err"; then
   log "ERROR: SSH to $API_HOST failed:"
   sed 's/^/[connect]   /' "$WORKDIR/ssh-err" >&2
-  log "Set CLUSTER_SSH_KEY_B64 (base64 of the cluster SSH private key). If the host key"
+  log "Set CLUSTER_SSH_KEY_B64 (base64 of the dedicated SSH key). If the host key"
   log "changed, the cluster was rebuilt — regenerate scripts/known_hosts (see header)."
   exit 1
 fi
 
-# --- kubectl wrapper: execs k3s kubectl on the CP, shell-safe quoting ---
+# kubectl wrapper: execs k3s kubectl on the CP, shell-safe quoting
 cat > "$WORKDIR/bin/kubectl" <<EOF
 #!/usr/bin/env bash
 args=""

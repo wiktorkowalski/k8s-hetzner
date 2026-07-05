@@ -1,8 +1,8 @@
 # Cluster Health — Sweep Commands
 
 Run all of these; collect findings, don't stop at the first hit. Every command works
-in both access modes (direct and kubectl-over-SSH). `kubectl port-forward` does NOT
-work in SSH mode — that's why Alertmanager/Prometheus go through the API service proxy.
+in all access modes. `kubectl port-forward` does NOT work in SSH mode — that's why
+Alertmanager/Prometheus go through the API service proxy.
 
 ```bash
 # Firing alerts (source of truth — start here)
