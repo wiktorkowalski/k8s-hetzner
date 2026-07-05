@@ -1,6 +1,6 @@
 ---
 name: cluster-health
-description: Diagnose and fix the k8s-hetzner cluster (k3s on Hetzner) from anywhere — sweeps firing alerts, nodes, pods, ArgoCD apps, Longhorn volumes, certs and events, then applies safe fixes automatically and asks before risky ones. Works remotely by running kubectl on a control plane over SSH when the kube API (home-IP-only) is unreachable. Use when the user asks to check/health-check the cluster, says something is down/broken/alerting, or invokes /cluster-health.
+description: Diagnose and fix the k8s-hetzner cluster (k3s on Hetzner) from anywhere — sweeps firing alerts, nodes, pods, ArgoCD apps, Longhorn volumes, certs and events, then applies safe fixes automatically and asks before risky ones. Works remotely via LB 443 SNI passthrough to the kube API (Claude cloud sandboxes) or kubectl-over-SSH on a control plane (laptops). Use when the user asks to check/health-check the cluster, says something is down/broken/alerting, or invokes /cluster-health.
 ---
 
 # Cluster Health
