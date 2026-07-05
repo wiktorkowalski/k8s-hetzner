@@ -46,6 +46,13 @@ if [ -n "$KC" ] && KUBECONFIG="$KC" kubectl get --raw /readyz --request-timeout=
 fi
 log "no direct API access (expected outside home IP) — using kubectl-over-SSH via $API_HOST"
 
+if ! command -v ssh >/dev/null 2>&1; then
+  log "ERROR: no ssh client in this environment. Add this to the cloud env Setup script:"
+  log "  sudo apt-get update -qq && sudo apt-get install -y -qq openssh-client"
+  log "(or run it now in this session if apt is available)"
+  exit 1
+fi
+
 # --- ssh setup ---
 SSH_KEY_OPT=""
 if [ -n "${CLUSTER_SSH_KEY_B64:-}" ]; then

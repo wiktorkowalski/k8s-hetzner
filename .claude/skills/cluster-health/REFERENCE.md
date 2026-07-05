@@ -59,6 +59,15 @@ One secret is required in any remote env (Claude Code cloud / another machine):
 Optional: `KUBECONFIG_B64` (`cd infra && terraform output -raw kubeconfig | base64`) —
 only used for the direct path when the env's egress IP is allowlisted; otherwise ignored.
 
+Cloud env **Setup script** (the sandbox image has no ssh client or kubectl; the SSH
+mode only needs the ssh client):
+
+```bash
+#!/bin/bash
+sudo apt-get update -qq && sudo apt-get install -y -qq openssh-client || \
+  apt-get update -qq && apt-get install -y -qq openssh-client
+```
+
 Network egress to `api.k8s.vicio.ovh` port 22 must be allowed. After a cluster rebuild,
 regenerate `scripts/known_hosts` (command in the connect.sh header) and re-derive the key
 if it changed.
