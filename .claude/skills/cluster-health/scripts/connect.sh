@@ -47,9 +47,9 @@ fi
 log "no direct API access (expected outside home IP) — using kubectl-over-SSH via $API_HOST"
 
 if ! command -v ssh >/dev/null 2>&1; then
-  log "ERROR: no ssh client in this environment. Add this to the cloud env Setup script:"
-  log "  sudo apt-get update -qq && sudo apt-get install -y -qq openssh-client"
-  log "(or run it now in this session if apt is available)"
+  log "ERROR: no ssh client in this environment. Add the Setup script from REFERENCE.md"
+  log "(remote environment setup section), or run now:"
+  log "  sudo apt-get update --allow-releaseinfo-change -qq; sudo apt-get install -y openssh-client"
   exit 1
 fi
 

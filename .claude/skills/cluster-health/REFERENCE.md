@@ -64,8 +64,12 @@ mode only needs the ssh client):
 
 ```bash
 #!/bin/bash
-sudo apt-get update -qq && sudo apt-get install -y -qq openssh-client || \
-  apt-get update -qq && apt-get install -y -qq openssh-client
+# ssh client for cluster-health. update is best-effort: the sandbox image carries
+# unrelated PPAs (e.g. ondrej/php) whose metadata changes make a strict update exit 100.
+command -v ssh >/dev/null && exit 0
+SUDO=""; [ "$(id -u)" != "0" ] && SUDO=sudo
+$SUDO apt-get update --allow-releaseinfo-change -qq || true
+$SUDO apt-get install -y -qq openssh-client
 ```
 
 Network egress to `api.k8s.vicio.ovh` port 22 must be allowed. After a cluster rebuild,
