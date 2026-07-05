@@ -1,6 +1,6 @@
 ---
 name: cluster-health
-description: Diagnose and fix the k8s-hetzner cluster (k3s on Hetzner) from anywhere — sweeps firing alerts, nodes, pods, ArgoCD apps, Longhorn volumes, certs and events, then applies safe fixes automatically and asks before risky ones. Works remotely via LB 443 SNI passthrough to the kube API (Claude cloud sandboxes) or kubectl-over-SSH on a control plane (laptops). Use when the user asks to check/health-check the cluster, says something is down/broken/alerting, or invokes /cluster-health.
+description: Diagnose and fix the k8s-hetzner cluster (k3s on Hetzner) from anywhere — sweeps firing alerts, nodes, pods, ArgoCD apps, Longhorn volumes, certs and events, then applies safe fixes automatically and asks before risky ones. Also has a report-only glance mode (arg "glance") that forecasts trouble: PVC fill trajectory, restart deltas, cert expiry, memory/storage headroom. Works remotely via LB 443 SNI passthrough to the kube API (Claude cloud sandboxes) or kubectl-over-SSH on a control plane (laptops). Use when the user asks to check/health-check the cluster, says something is down/broken/alerting, wants a daily checkup, or invokes /cluster-health.
 ---
 
 # Cluster Health
@@ -13,6 +13,12 @@ there), and kubectl-over-SSH on a control plane (laptops without kubeconfig).
 Load the other files only when you reach that step:
 - [SWEEP.md](SWEEP.md) — the sweep command list (step 2)
 - [REFERENCE.md](REFERENCE.md) — known failure modes, fix commands, cluster facts, remote setup
+- [GLANCE.md](GLANCE.md) — glance mode (below)
+
+**Glance mode:** if invoked with arg `glance`, or the user asks for a routine
+checkup/daily check/trends with no specific problem in mind, do step 1 (connect),
+then follow [GLANCE.md](GLANCE.md) instead of steps 2-5. Glance is REPORT-ONLY —
+no fixes, not even safe ones; it forecasts what's heading toward trouble.
 
 ## 1. Connect
 
