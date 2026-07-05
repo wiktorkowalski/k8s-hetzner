@@ -38,9 +38,6 @@ kubectl -n longhorn-system get volumes.longhorn.io -o \
 # Evicted pod cleanup (safe)
 kubectl get pods -A --field-selector=status.phase=Failed -o name | head  # inspect first
 kubectl delete pods -A --field-selector=status.phase=Failed
-
-# Node conditions at a glance
-kubectl get nodes -o custom-columns='NAME:.metadata.name,READY:.status.conditions[?(@.type=="Ready")].status,MEM:.status.conditions[?(@.type=="MemoryPressure")].status,DISK:.status.conditions[?(@.type=="DiskPressure")].status'
 ```
 
 ## Cluster facts
