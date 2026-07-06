@@ -57,9 +57,14 @@ trivy cilium/grafana, Prometheus PVC 78-85%, Saturday restart bumps).
 2027-05-24 (static copies in Claude cloud envs need re-pasting before then); Longhorn
 was at ~65% per node on 2026-07-05 — if check 6 fires, capacity planning time.
 
-**Known gap:** node-exporter filesystem metrics (`node_filesystem_*`) are not scraped,
-so node ROOT disk usage is invisible here — only the DiskPressure condition (check 5)
-covers it, which fires late. Flag this if root-disk trouble is suspected.
+**Node root disk** (gap closed 2026-07-06 — SELinux `spc_t` fix, commit f5281f4):
+`node_filesystem_*` works now. Baseline 2026-07-06: agents ~67-70% root usage, CPs ~22%.
+Worth adding to the checks when relevant:
+
+```bash
+bash .claude/skills/cluster-health/scripts/promq.sh \
+  '1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} > 0.8'
+```
 
 ## Report format
 
