@@ -188,6 +188,15 @@ spec:
               memory: 128Mi
 
         prometheus-node-exporter:
+          # MicroOS SELinux denies reading /host/proc/1/mountinfo, killing the
+          # filesystem collector (node_filesystem_* absent); spc_t exempts it (#50)
+          securityContext:
+            fsGroup: 65534
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+            seLinuxOptions:
+              type: spc_t
           resources:
             requests:
               cpu: 50m
