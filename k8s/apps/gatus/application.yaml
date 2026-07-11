@@ -35,7 +35,8 @@ spec:
           storage:
             type: sqlite
             path: /data/data.db
-            maximum-number-of-results: 2880
+            # 86400 = 30d for 30s-interval endpoints (60d for 60s ones)
+            maximum-number-of-results: 86400
             maximum-number-of-events: 300
           kubernetes:
             auto-discover: true
@@ -119,7 +120,7 @@ spec:
                 - "[STATUS] == any(200, 302)"
         persistence:
           enabled: true
-          size: 1Gi
+          size: 2Gi
           storageClassName: longhorn
   destination:
     server: https://kubernetes.default.svc
