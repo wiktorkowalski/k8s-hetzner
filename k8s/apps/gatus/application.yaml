@@ -120,7 +120,10 @@ spec:
                 - "[STATUS] == any(200, 302)"
         persistence:
           enabled: true
-          size: 2Gi
+          # Longhorn scheduling pool on agents is ~full (106Gi reserved of ~107Gi
+          # schedulable) — expansion beyond 1Gi is rejected by the webhook.
+          # 30d of sqlite history is ~200-350MB, fits fine.
+          size: 1Gi
           storageClassName: longhorn
   destination:
     server: https://kubernetes.default.svc
