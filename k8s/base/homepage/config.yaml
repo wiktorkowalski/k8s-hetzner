@@ -76,11 +76,6 @@ data:
             href: https://hubble.k8s.vicio.ovh
             icon: cilium
             description: Network observability
-    - Infrastructure:
-        - OpenCost:
-            href: https://opencost.k8s.vicio.ovh
-            icon: opencost
-            description: Cost monitoring
   bookmarks.yaml: |
     []
   docker.yaml: |

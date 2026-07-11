@@ -106,12 +106,6 @@ spec:
               interval: 60s
               conditions:
                 - "[STATUS] == 200"
-            - name: OpenCost
-              group: Admin
-              url: http://opencost.opencost.svc:9090
-              interval: 60s
-              conditions:
-                - "[STATUS] == 200"
             - name: pgAdmin
               group: Databases
               url: http://pgadmin.postgres.svc:80
