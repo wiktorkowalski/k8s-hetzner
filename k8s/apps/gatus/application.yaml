@@ -28,10 +28,15 @@ spec:
             memory: 64Mi
           limits:
             memory: 256Mi
+        deployment:
+          # RWO Longhorn volume — rolling update would deadlock on attach
+          strategy: Recreate
         config:
           storage:
             type: sqlite
             path: /data/data.db
+            maximum-number-of-results: 2880
+            maximum-number-of-events: 300
           kubernetes:
             auto-discover: true
             cluster-mode: cluster
@@ -112,14 +117,10 @@ spec:
               interval: 60s
               conditions:
                 - "[STATUS] == any(200, 302)"
-        extraVolumeMounts:
-          - name: data
-            mountPath: /data
-        extraVolumes:
-          - name: data
-            emptyDir: {}
         persistence:
-          enabled: false
+          enabled: true
+          size: 1Gi
+          storageClassName: longhorn
   destination:
     server: https://kubernetes.default.svc
     namespace: gatus
