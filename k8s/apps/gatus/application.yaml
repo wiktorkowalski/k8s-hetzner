@@ -31,6 +31,10 @@ spec:
         deployment:
           # RWO Longhorn volume — rolling update would deadlock on attach
           strategy: Recreate
+        env:
+          # readOnlyRootFilesystem — SQLite temp spills (86k-row UI queries)
+          # need a writable dir or they fail with SQLITE_IOERR_GETTEMPPATH (6410)
+          SQLITE_TMPDIR: /data
         config:
           storage:
             type: sqlite
