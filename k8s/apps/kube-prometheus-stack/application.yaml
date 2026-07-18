@@ -89,7 +89,23 @@ spec:
                   matchers:
                     - alertname = "ArgoCDAppOutOfSync"
                     - name = "beyla"
+                # Mute warning/info noise during the kured reboot window (Sat 3-6 AM,
+                # infra/kube.tf kured_options) — node drains trip PodNotReady & friends.
+                # Criticals bypass this; alerts still firing after the window notify normally.
                 - receiver: discord
+                  matchers:
+                    - severity =~ "warning|info"
+                  mute_time_intervals:
+                    - kured-reboot-window
+                - receiver: discord
+            time_intervals:
+              - name: kured-reboot-window
+                time_intervals:
+                  - weekdays: ['saturday']
+                    times:
+                      - start_time: '03:00'
+                        end_time: '06:30'
+                    location: Europe/Warsaw
             receivers:
               - name: 'null'
               - name: discord
