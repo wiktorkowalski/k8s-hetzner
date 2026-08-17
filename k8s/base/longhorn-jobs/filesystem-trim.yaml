@@ -1,0 +1,29 @@
+# Weekly fstrim on every Longhorn volume.
+#
+# Why: kured reboots agents Saturday 3-6 AM Warsaw. Each reboot rebuilds replicas,
+# which leaves a system-generated snapshot behind. auto-cleanup-system-generated-snapshot
+# marks it removed, but Longhorn never coalesces a snapshot whose child is volume-head
+# while the volume is attached — so the blocks stay allocated on the node root disk.
+# Result: sawtooth, ~30 GiB/node of dead snapshot, NodeDiskPressure every ~2 weeks.
+#
+# fstrim tells the engine which blocks the filesystem no longer uses; the engine frees
+# them from markRemoved snapshot files too, which is why this works even with
+# remove-snapshots-during-filesystem-trim=false.
+#
+# Cron runs in the longhorn-manager pod timezone = UTC. Sunday 03:00 UTC is ~23h after
+# the kured window closes (04:00 UTC Saturday), so all replica rebuilds have finished.
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: filesystem-trim
+  namespace: longhorn-system
+spec:
+  name: filesystem-trim
+  task: filesystem-trim
+  cron: "0 3 * * 0"
+  # All PVCs already carry recurring-job-group.longhorn.io/default=enabled
+  groups:
+    - default
+  concurrency: 1
+  # Ignored for filesystem-trim (no snapshots created), field is required by the CRD
+  retain: 0
