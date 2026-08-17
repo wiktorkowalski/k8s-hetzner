@@ -12,6 +12,12 @@
 #
 # Cron runs in the longhorn-manager pod timezone = UTC. Sunday 03:00 UTC is ~23h after
 # the kured window closes (04:00 UTC Saturday), so all replica rebuilds have finished.
+#
+# Known noise (verified by a manual test run 2026-08-17): the job's HTTP client has a
+# hardcoded 60s timeout with no Longhorn setting to raise it. Slow volumes (loki, tempo)
+# log "context deadline exceeded" and skip their snapshot purge, but the trim itself
+# still completes server-side — their actualSize dropped anyway. The Job still reports
+# Complete, so those errors do not alert. Do not treat them as a broken job.
 apiVersion: longhorn.io/v1beta2
 kind: RecurringJob
 metadata:
