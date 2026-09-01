@@ -1,12 +1,16 @@
 name: Terraform Apply
 
+# DISABLED 2026-09-01 — the cluster was torn down with `terraform destroy`; the Hetzner
+# project is empty. The `push` trigger would recreate all 78 resources (~EUR 125/month) on the
+# next commit touching infra/**, so it stays commented out. `workflow_dispatch` remains: to
+# rebuild, rerun packer first (the MicroOS snapshots were deleted too), then run this manually.
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'infra/**'
-      - '.github/workflows/terraform-apply.yml'
+  # push:
+  #   branches:
+  #     - master
+  #   paths:
+  #     - 'infra/**'
+  #     - '.github/workflows/terraform-apply.yml'
   workflow_dispatch: {}
 
 permissions:
